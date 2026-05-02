@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
+import { techRules } from "./techRules.js";
 
 export class StructureExtractor {
   constructor() {
@@ -31,9 +32,12 @@ export class StructureExtractor {
 
       const tree = await this.buildTree(projectPath);
 
-      return tree;
+      const technologies = await this.detectTechnologies(tree);
+
+      return { tree, technologies };
     } catch (error) {
-      throw new Error("Invalid project path.");
+      console.error("ERROR REAL:", error); 
+      throw error;
     }
   }
 
@@ -132,9 +136,38 @@ export class StructureExtractor {
     return this.ignoredNames.has(name);
   }
 
-  async detectTechnologies() {}
+  //
+  // RECIBE COMO PARAMETRO EL ARBOL YA PROCESADO Y DETECTA PATRONES
+  // DE NOMBRES DE LAS TECNOLOGIAS UTILIZADAS
+
+  async detectTechnologies(tree) {
+    const technologies = new Set();
+
+    const traverse = (node) => {
+      if (node.type === "file") {
+        const exactTech = techRules.exact[node.name];
+        if (exactTech) {
+          technologies.add(exactTech);
+        }
+
+        for (const ext in techRules.extensions) {
+          if (node.name.endsWith(ext)) {
+            technologies.add(techRules.extensions[ext]);
+          }
+        }
+      }
+
+      if (node.children) {
+        for (const child of node.children) {
+          traverse(child);
+        }
+      }
+    };
+
+    traverse(tree);
+
+    return Array.from(technologies);
+  }
 
   async findEntryPoints() {}
-
-  async filterNoise() {}
 }
