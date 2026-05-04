@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { techRules } from "./techRules.js";
+import { entryRules } from "./entryRules.js";
 
 export class StructureExtractor {
   constructor() {
@@ -34,9 +35,11 @@ export class StructureExtractor {
 
       const technologies = await this.detectTechnologies(tree);
 
-      return { tree, technologies };
+      const entryPoints = await this.findEntryPoints(tree, technologies);
+
+      return { tree, technologies, entryPoints };
     } catch (error) {
-      console.error("ERROR REAL:", error); 
+      console.error("ERROR REAL:", error);
       throw error;
     }
   }
@@ -169,5 +172,36 @@ export class StructureExtractor {
     return Array.from(technologies);
   }
 
-  async findEntryPoints() {}
+  async findEntryPoints(tree, technologies) {
+    const entryPoints = {};
+
+    // inicializar estructura
+    for (const tech of technologies) {
+      entryPoints[tech] = [];
+    }
+
+    const traverse = (node) => {
+      if (node.type === "file") {
+        for (const tech of technologies) {
+          const possibleEntries = entryRules[tech];
+
+          if (!possibleEntries) continue;
+
+          if (possibleEntries.includes(node.name)) {
+            entryPoints[tech].push(node.name);
+          }
+        }
+      }
+
+      if (node.children) {
+        for (const child of node.children) {
+          traverse(child);
+        }
+      }
+    };
+
+    traverse(tree);
+
+    return entryPoints;
+  }
 }
