@@ -157,6 +157,7 @@ class CodeParser {
       return routes;
     } catch (error) {
       console.error("Error extracting routes:", error);
+      return [];
     }
   }
 
