@@ -17,15 +17,73 @@ class CodeParser {
 
   #parseByType(fileType, content) {}
 
-  #parseJavaScript(content) {}
+  #parseJavaScript(content) {
+    const ast = parser.parse(content, {
+      sourceType: "unambiguous",
+      allowReturnOutsideFunction: true,
+      plugins: ["dynamicImport"],
+    });
+    return {
+      exports: this.#extractExports(ast),
+      classes: this.#extractClasses(ast),
+    };
+  }
 
   #extractImports(content) {}
 
   #extractFunctions(content) {}
 
   #extractRoutes(content) {}
+  /*
+   * EXTRAE CLASES
+   *
+   * QUÉ DEBE HACER:
+   * - Detectar class MyClass
+   * - Retornar nombres de clases
+   *
+   * QUÉ NO DEBE HACER:
+   * - No debe detectar funciones
+   * - No debe detectar exports
+   */
+  #extractClasses(ast) {
+    const classes = [];
 
-  #extractClasses(content) {}
+    try {
+      const visit = (node) => {
+        if (!node || typeof node !== "object") {
+          return;
+        }
+        if (node.type === "ClassDeclaration") {
+          classes.push({
+            name: node.id?.name || "Anonymous",
+            extends: node.superClass?.name,
+            line: node.loc?.start.line || 0,
+            methods: this.#extractMethods(node),
+          });
+        }
+        for (const key in node) {
+          if (
+            key === "loc" ||
+            key === "range" ||
+            key === "leadingComments" ||
+            key === "trailingComments"
+          )
+            continue;
+
+          const child = node[key];
+          if (Array.isArray(child)) {
+            for (const item of child) visit(item);
+          } else if (typeof child === "object") {
+            visit(child);
+          }
+        }
+      };
+      visit(ast);
+      return classes;
+    } catch (error) {
+      console.error("Error extracting classes:", error);
+    }
+  }
 
   /*
    * EXTRAE EXPORTS
@@ -43,14 +101,9 @@ class CodeParser {
   #extractExports(content) {
     const exports = [];
     try {
-      const ast = parser.parse(content, {
-        sourceType: "unambiguous",
-        allowReturnOutsideFunction: true,
-        plugins: ["dynamicImport"],
-      });
       const visit = (node) => {
         if (!node || typeof node !== "object") return;
-        
+
         if (node.type === "ExportDefaultDeclaration") {
           exports.push({
             name: "default",
@@ -114,7 +167,7 @@ class CodeParser {
         if (decl.id.type === "Identifier") {
           exports.push({
             name: decl.id.name,
-            kind: declaration.kind, 
+            kind: declaration.kind,
             line: declaration.loc?.start.line || 0,
           });
         }
