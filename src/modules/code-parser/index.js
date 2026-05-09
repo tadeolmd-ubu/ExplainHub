@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import parser from "@babel/parser";
+import { fileTypes } from "./fileTypes.js";
 
 //npm install --save-dev @babel/parser
 class CodeParser {
@@ -12,10 +13,15 @@ class CodeParser {
 
   async #processFile(filePath) {}
 
-  async #readFile(filePath) {}
+  async #readFile(filePath) {
 
-  #getFileType(filePath) {}
+    
+  }
 
+  #getFileType(filePath) {
+  const ext = path.extname(filePath);
+  return fileTypes[ext] || "unknown";
+}
   #parseByType(fileType, content) {}
 
   #parseJavaScript(content) {
