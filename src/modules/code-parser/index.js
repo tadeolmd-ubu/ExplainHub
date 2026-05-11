@@ -5,14 +5,49 @@ import { fileTypes } from "./fileTypes.js";
 
 //npm install --save-dev @babel/parser
 class CodeParser {
-  async parse(tree, technologies, projectPath) {}
+  async parse(tree, technologies, projectPath) {
+    const files = [];
+    for (const child of tree.children || []) {
+      files.push(...this.#traverse(child));
+    }
 
-  #traverse(tree) {}
+    const results = [];
+
+    for (const file of files) {
+      if (this.#isParseable(file, technologies)) {
+        try {
+          const filePath = path.join(projectPath, file);
+          const result = await this.#processFile(filePath);
+          results.push(result);
+        } catch (error) {
+          console.error(`Error processing ${file}:`, error);
+        }
+      }
+    }
+
+    return results;
+  }
+  #traverse(node, parentPath = "") {
+    const files = [];
+    if (node.type === "file") {
+      files.push(parentPath ? `${parentPath}/${node.name}` : node.name);
+    }
+    if (node.type === "directory" && node.children) {
+      const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+      for (const child of node.children) {
+        const childFiles = this.#traverse(child, currentPath);
+        for (const file of childFiles) {
+          files.push(file);
+        }
+      }
+    }
+    return files;
+  }
 
   #isParseable(filePath, technologies) {
-  const type = this.#getFileType(filePath);
-  return type === "javascript" || type === "typescript";
-}
+    const type = this.#getFileType(filePath);
+    return type === "javascript" || type === "typescript";
+  }
 
   async #processFile(filePath) {
     const fileContent = await this.#readFile(filePath);
@@ -21,6 +56,7 @@ class CodeParser {
     return {
       filePath,
       type: fileType,
+      imports: parsed.imports,
       exports: parsed.exports,
       classes: parsed.classes,
       routes: parsed.routes,
@@ -108,7 +144,7 @@ class CodeParser {
       visit(ast);
       return imports;
     } catch (error) {
-      ("Error extracting functions:", error);
+      console.error("Error extracting imports:", error);
       return [];
     }
   }
