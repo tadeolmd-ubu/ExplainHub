@@ -9,7 +9,10 @@ class CodeParser {
 
   #traverse(tree) {}
 
-  #isParseable(filePath, technologies) {}
+  #isParseable(filePath, technologies) {
+  const type = this.#getFileType(filePath);
+  return type === "javascript" || type === "typescript";
+}
 
   async #processFile(filePath) {
     const fileContent = await this.#readFile(filePath);
