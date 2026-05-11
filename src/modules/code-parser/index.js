@@ -9,20 +9,39 @@ class CodeParser {
 
   #traverse(tree) {}
 
-  #isParseable(filePath, technologies) {}
+  #isParseable(filePath, technologies) {
+  const type = this.#getFileType(filePath);
+  return type === "javascript" || type === "typescript";
+}
 
-  async #processFile(filePath) {}
+  async #processFile(filePath) {
+    const fileContent = await this.#readFile(filePath);
+    const fileType = this.#getFileType(filePath);
+    const parsed = this.#parseByType(fileType, fileContent);
+    return {
+      filePath,
+      type: fileType,
+      exports: parsed.exports,
+      classes: parsed.classes,
+      routes: parsed.routes,
+      functions: parsed.functions,
+    };
+  }
 
   async #readFile(filePath) {
-
-    
+    return fs.readFile(filePath, "utf-8");
   }
 
   #getFileType(filePath) {
-  const ext = path.extname(filePath);
-  return fileTypes[ext] || "unknown";
-}
-  #parseByType(fileType, content) {}
+    const ext = path.extname(filePath);
+    return fileTypes[ext] || "unknown";
+  }
+  #parseByType(fileType, content) {
+    if (fileType === "javascript" || fileType === "typescript") {
+      return this.#parseJavaScript(content);
+    }
+    return {};
+  }
 
   #parseJavaScript(content) {
     const ast = parser.parse(content, {
@@ -31,6 +50,7 @@ class CodeParser {
       plugins: ["dynamicImport"],
     });
     return {
+      imports: this.#extractImports(ast),
       exports: this.#extractExports(ast),
       classes: this.#extractClasses(ast),
       routes: this.#extractRoutes(ast),
@@ -38,7 +58,60 @@ class CodeParser {
     };
   }
 
-  #extractImports(content) {}
+  #extractImports(ast) {
+    const imports = [];
+
+    try {
+      const visit = (node) => {
+        if (!node || typeof node !== "object") {
+          return;
+        }
+        if (node.type === "ImportDeclaration") {
+          imports.push({
+            type: "esm",
+            source: node.source.value,
+            specifiers: node.specifiers.map((spec) => ({
+              kind:
+                spec.type === "ImportDefaultSpecifier"
+                  ? "default"
+                  : spec.type === "ImportNamespaceSpecifier"
+                    ? "namespace"
+                    : "named",
+              imported: spec.imported?.name || spec.local?.name,
+              local: spec.local?.name,
+            })),
+            line: node.loc?.start.line || 0,
+          });
+        }
+        if (
+          node.type === "CallExpression" &&
+          node.callee?.type === "Identifier" &&
+          node.callee.name === "require" &&
+          node.arguments[0]?.type === "StringLiteral"
+        ) {
+          imports.push({
+            type: "cjs",
+            source: node.arguments[0].value,
+            line: node.loc?.start.line || 0,
+          });
+        }
+        for (const key in node) {
+          if (key === "loc" || key === "range" || key === "comments") continue;
+          const child = node[key];
+          if (Array.isArray(child)) {
+            for (const item of child) visit(item);
+          } else if (typeof child === "object") {
+            visit(child);
+          }
+        }
+      };
+      visit(ast);
+      return imports;
+    } catch (error) {
+      ("Error extracting functions:", error);
+      return [];
+    }
+  }
   /*
    * EXTRAE FUNCIONES
    *
