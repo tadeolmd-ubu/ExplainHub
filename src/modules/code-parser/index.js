@@ -1,20 +1,24 @@
-import fs from "node:fs/promises";
 import path from "node:path";
-import parser from "@babel/parser";
-import { fileTypes } from "./fileTypes.js";
+import {
+  traverse,
+  readFile,
+  getFileType,
+  isParseable,
+} from "./utils/fileUtils.js";
+import { parseByType } from "./parsers/parserFactory.js";
 
 //npm install --save-dev @babel/parser
 class CodeParser {
-  async parse(tree, technologies, projectPath) {
+  async parse(tree, projectPath) {
     const files = [];
     for (const child of tree.children || []) {
-      files.push(...this.#traverse(child));
+      files.push(...traverse(child));
     }
 
     const results = [];
 
     for (const file of files) {
-      if (this.#isParseable(file, technologies)) {
+      if (isParseable(file)) {
         try {
           const filePath = path.join(projectPath, file);
           const result = await this.#processFile(filePath);
@@ -28,9 +32,9 @@ class CodeParser {
     return results;
   }
   async #processFile(filePath) {
-    const fileContent = await this.#readFile(filePath);
-    const fileType = this.#getFileType(filePath);
-    const parsed = this.#parseByType(fileType, fileContent);
+    const fileContent = await readFile(filePath);
+    const fileType = getFileType(filePath);
+    const parsed = parseByType(fileType, fileContent);
     return {
       filePath,
       type: fileType,

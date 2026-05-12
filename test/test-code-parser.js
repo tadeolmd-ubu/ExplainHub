@@ -16,7 +16,7 @@ async function run() {
 
   // 2. Parsear archivos
   const parser = new CodeParser();
-  const results = await parser.parse(tree, technologies, projectPath);
+  const results = await parser.parse(tree, projectPath);
 
   console.log(`Parsed ${results.length} files:\n`);
 

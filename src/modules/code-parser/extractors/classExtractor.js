@@ -1,4 +1,4 @@
-import { extractFunctions } from "./functionExtractor";
+import { extractFunctions } from "./functionExtractor.js";
 
 export function extractClasses(ast) {
   const classes = [];
