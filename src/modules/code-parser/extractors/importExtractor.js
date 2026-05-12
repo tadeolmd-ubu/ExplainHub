@@ -1,5 +1,3 @@
-
-
 export function extractImports(ast) {
   const imports = [];
 
