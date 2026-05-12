@@ -27,28 +27,6 @@ class CodeParser {
 
     return results;
   }
-  #traverse(node, parentPath = "") {
-    const files = [];
-    if (node.type === "file") {
-      files.push(parentPath ? `${parentPath}/${node.name}` : node.name);
-    }
-    if (node.type === "directory" && node.children) {
-      const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-      for (const child of node.children) {
-        const childFiles = this.#traverse(child, currentPath);
-        for (const file of childFiles) {
-          files.push(file);
-        }
-      }
-    }
-    return files;
-  }
-
-  #isParseable(filePath, technologies) {
-    const type = this.#getFileType(filePath);
-    return type === "javascript" || type === "typescript";
-  }
-
   async #processFile(filePath) {
     const fileContent = await this.#readFile(filePath);
     const fileType = this.#getFileType(filePath);
@@ -64,14 +42,6 @@ class CodeParser {
     };
   }
 
-  async #readFile(filePath) {
-    return fs.readFile(filePath, "utf-8");
-  }
-
-  #getFileType(filePath) {
-    const ext = path.extname(filePath);
-    return fileTypes[ext] || "unknown";
-  }
   #parseByType(fileType, content) {
     if (fileType === "javascript" || fileType === "typescript") {
       return this.#parseJavaScript(content);
@@ -94,60 +64,7 @@ class CodeParser {
     };
   }
 
-  #extractImports(ast) {
-    const imports = [];
 
-    try {
-      const visit = (node) => {
-        if (!node || typeof node !== "object") {
-          return;
-        }
-        if (node.type === "ImportDeclaration") {
-          imports.push({
-            type: "esm",
-            source: node.source.value,
-            specifiers: node.specifiers.map((spec) => ({
-              kind:
-                spec.type === "ImportDefaultSpecifier"
-                  ? "default"
-                  : spec.type === "ImportNamespaceSpecifier"
-                    ? "namespace"
-                    : "named",
-              imported: spec.imported?.name || spec.local?.name,
-              local: spec.local?.name,
-            })),
-            line: node.loc?.start.line || 0,
-          });
-        }
-        if (
-          node.type === "CallExpression" &&
-          node.callee?.type === "Identifier" &&
-          node.callee.name === "require" &&
-          node.arguments[0]?.type === "StringLiteral"
-        ) {
-          imports.push({
-            type: "cjs",
-            source: node.arguments[0].value,
-            line: node.loc?.start.line || 0,
-          });
-        }
-        for (const key in node) {
-          if (key === "loc" || key === "range" || key === "comments") continue;
-          const child = node[key];
-          if (Array.isArray(child)) {
-            for (const item of child) visit(item);
-          } else if (typeof child === "object") {
-            visit(child);
-          }
-        }
-      };
-      visit(ast);
-      return imports;
-    } catch (error) {
-      console.error("Error extracting imports:", error);
-      return [];
-    }
-  }
   /*
    * EXTRAE FUNCIONES
    *
