@@ -41,15 +41,6 @@ class CodeParser {
       functions: parsed.functions,
     };
   }
-
-  #parseByType(fileType, content) {
-    if (fileType === "javascript" || fileType === "typescript") {
-      return this.#parseJavaScript(content);
-    }
-    return {};
-  }
-
-  
 }
 
 export default CodeParser;
