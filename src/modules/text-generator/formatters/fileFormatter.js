@@ -1,4 +1,16 @@
-export function fileFormatter(file) {}
+export function fileFormatter(file) {
+  const { filePath, type, imports, exports, functions, classes, routes } = file;
+
+  const lines = [
+    `-- ${filePath} (${type}) --`,
+    fmtLabel("Imports", fmtImports(imports)),
+    fmtLabel("Exports", fmtExports(exports)),
+    fmtLabel("Functions", fmtFunctions(functions)),
+    fmtLabel("Classes", fmtClasses(classes)),
+    fmtLabel("Routes", fmtRoutes(routes)),
+  ].filter(Boolean);
+  return lines.join("\n");
+}
 
 function fmtLabel(label, value) {
   if (!value) {
