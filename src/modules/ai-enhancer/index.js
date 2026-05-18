@@ -4,9 +4,9 @@ import { buildPrompt } from "../ai-enhancer/promt/promt.js";
 export class AiEnhancer {
   constructor() {
     this.ollama = new Ollama({
-      host: process.env.OLLAMA_URL || "http://127.0.0.1:11434",
+      host: process.env.OLLAMA_URL,
     });
-    this.model = process.env.OLLAMA_MODEL || "qwen3.5";
+    this.model = process.env.OLLAMA_MODEL;
   }
   async enhance(plainText) {
     const prompt = buildPrompt(plainText);
