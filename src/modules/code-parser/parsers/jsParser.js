@@ -9,7 +9,7 @@ export function parseJavaScript(content) {
   const ast = parser.parse(content, {
     sourceType: "unambiguous",
     allowReturnOutsideFunction: true,
-    plugins: ["dynamicImport"],
+    plugins: ["dynamicImport", "jsx"],
   });
   return {
     imports: extractImports(ast),
