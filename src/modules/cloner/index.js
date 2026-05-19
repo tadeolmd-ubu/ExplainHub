@@ -14,8 +14,7 @@ export class RepositoryCloner {
    * @param {import("simple-git").SimpleGitOptions} [options.gitOptions] Opciones opcionales para simple-git.
    */
   constructor(options = {}) {
-    this.baseTempDir =
-      options.baseTempDir ?? path.join(process.cwd(), "temp");
+    this.baseTempDir = options.baseTempDir ?? path.join(process.cwd(), "temp");
     this.git = simpleGit({
       baseDir: process.cwd(),
       ...options.gitOptions,
@@ -29,6 +28,7 @@ export class RepositoryCloner {
    * @returns {Promise<CloneResult>} Metadata del clon realizado.
    */
   async clone(repositoryUrl) {
+    console.log("iniciando clonado");
     const sanitizedRepositoryUrl = this.validateRepositoryUrl(repositoryUrl);
 
     await this.ensureBaseTempDirectory();
@@ -41,6 +41,7 @@ export class RepositoryCloner {
 
     try {
       await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
+      console.log("termino clonado");
 
       return {
         repositoryUrl: sanitizedRepositoryUrl,
@@ -52,7 +53,7 @@ export class RepositoryCloner {
       await this.cleanup(tempPath);
 
       throw new Error(
-        `No se pudo clonar el repositorio "${sanitizedRepositoryUrl}": ${error.message}`
+        `No se pudo clonar el repositorio "${sanitizedRepositoryUrl}": ${error.message}`,
       );
     }
   }
@@ -65,18 +66,26 @@ export class RepositoryCloner {
    * @returns {string}
    */
   validateRepositoryUrl(repositoryUrl) {
-    if (typeof repositoryUrl !== "string" || repositoryUrl.trim().length === 0) {
-      throw new Error("Debes proporcionar una URL o ruta de repositorio valida.");
+    if (
+      typeof repositoryUrl !== "string" ||
+      repositoryUrl.trim().length === 0
+    ) {
+      throw new Error(
+        "Debes proporcionar una URL o ruta de repositorio valida.",
+      );
     }
 
     const normalizedUrl = repositoryUrl.trim();
 
-    if (this.isSupportedRemoteUrl(normalizedUrl) || this.isLikelyLocalPath(normalizedUrl)) {
+    if (
+      this.isSupportedRemoteUrl(normalizedUrl) ||
+      this.isLikelyLocalPath(normalizedUrl)
+    ) {
       return normalizedUrl;
     }
 
     throw new Error(
-      "Formato de repositorio no soportado. Usa HTTPS, HTTP, SSH, git:// o una ruta local."
+      "Formato de repositorio no soportado. Usa HTTPS, HTTP, SSH, git:// o una ruta local.",
     );
   }
 
@@ -145,7 +154,9 @@ export class RepositoryCloner {
     const supportedSchemes = /^(https?:\/\/|git:\/\/|ssh:\/\/)/i;
     const sshShortcut = /^[\w.-]+@[\w.-]+:[\w./-]+(?:\.git)?$/i;
 
-    return supportedSchemes.test(repositoryUrl) || sshShortcut.test(repositoryUrl);
+    return (
+      supportedSchemes.test(repositoryUrl) || sshShortcut.test(repositoryUrl)
+    );
   }
 
   /**

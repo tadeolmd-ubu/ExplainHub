@@ -5,7 +5,20 @@ import { TextGenerator } from "../../modules/text-generator/index.js";
 import { AiEnhancer } from "../../modules/ai-enhancer/index.js";
 
 export class AnalyzerService {
-  async analyze(projectPath) {
+  async analyze(input) {
+    let projectPath = input;
+
+    if (
+      input.startsWith("http://") ||
+      input.startsWith("https://") ||
+      input.startsWith("git@") ||
+      input.startsWith("git://")
+    ) {
+      const cloner = new RepositoryCloner();
+      const result = await cloner.clone(input);
+      projectPath = result.repoPath;
+    }
+
     const extractor = new StructureExtractor();
     const { tree, technologies, entryPoints } =
       await extractor.extract(projectPath);
@@ -15,11 +28,7 @@ export class AnalyzerService {
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
-      const stream = await enhancer.enhance(plainText);
-      let summary = "";
-      for await (const part of stream) {
-        summary += part.response;
-      }
+      const summary = await enhancer.enhance(plainText);
       return { summary, plainText, technologies, files };
     } catch {
       return { summary: plainText, plainText, technologies, files };
