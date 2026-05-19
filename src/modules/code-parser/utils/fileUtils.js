@@ -20,7 +20,12 @@ export function traverse(node, parentPath = "") {
 }
 export function isParseable(filePath) {
   const type = getFileType(filePath);
-  return type === "javascript" || type === "typescript";
+  return (
+    type === "javascript" ||
+    type === "typescript" ||
+    type === "markup" ||
+    type === "stylesheet"
+  );
 }
 export async function readFile(filePath) {
   return fs.readFile(filePath, "utf-8");
