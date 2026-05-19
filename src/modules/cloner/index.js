@@ -24,11 +24,14 @@ export class RepositoryCloner {
 
   /**
    * Clona un repositorio remoto o local dentro de una carpeta temporal del proyecto.
+   * Si se pasa un processCallback, ejecuta el callback con el resultado del clon
+   * y automaticamente elimina el repositorio al finalizar.
    *
    * @param {string} repositoryUrl URL o referencia del repositorio Git.
+   * @param {(result: CloneResult) => Promise<void>} [processCallback] Callback opcional para procesar el clon.
    * @returns {Promise<CloneResult>} Metadata del clon realizado.
    */
-  async clone(repositoryUrl) {
+  async clone(repositoryUrl, processCallback) {
     const sanitizedRepositoryUrl = this.validateRepositoryUrl(repositoryUrl);
 
     await this.ensureBaseTempDirectory();
@@ -42,12 +45,22 @@ export class RepositoryCloner {
     try {
       await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
 
-      return {
+      const result = {
         repositoryUrl: sanitizedRepositoryUrl,
         tempPath,
         repoPath,
         cloneId,
       };
+
+      if (processCallback) {
+        try {
+          await processCallback(result);
+        } finally {
+          await this.cleanup(tempPath);
+        }
+      }
+
+      return result;
     } catch (error) {
       await this.cleanup(tempPath);
 
