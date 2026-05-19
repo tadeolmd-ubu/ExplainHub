@@ -45,30 +45,29 @@ export class RepositoryCloner {
     try {
       await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
       console.log("termino clonado");
-
-      const result = {
-        repositoryUrl: sanitizedRepositoryUrl,
-        tempPath,
-        repoPath,
-        cloneId,
-      };
-
-      if (processCallback) {
-        try {
-          await processCallback(result);
-        } finally {
-          await this.cleanup(tempPath);
-        }
-      }
-
-      return result;
     } catch (error) {
       await this.cleanup(tempPath);
-
       throw new Error(
         `No se pudo clonar el repositorio "${sanitizedRepositoryUrl}": ${error.message}`,
       );
     }
+
+    const result = {
+      repositoryUrl: sanitizedRepositoryUrl,
+      tempPath,
+      repoPath,
+      cloneId,
+    };
+
+    if (processCallback) {
+      try {
+        await processCallback(result);
+      } finally {
+        await this.cleanup(tempPath);
+      }
+    }
+
+    return result;
   }
 
   /**
