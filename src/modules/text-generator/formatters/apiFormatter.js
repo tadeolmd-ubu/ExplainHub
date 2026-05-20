@@ -4,10 +4,12 @@ export function apiFormatter(files) {
   const lines = ["API ENDPOINTS", "============="];
   for (const file of filesWithRoutes) {
     for (const route of file.routes) {
-      lines.push(fmtRouteLine(route, file.filePath));
+      if (route.method && route.path) {
+        lines.push(fmtRouteLine(route, file.filePath));
+      }
     }
   }
-  return lines.join("\n");
+  return lines.length > 2 ? lines.join("\n") : null;
 }
 function fmtRouteLine(route, filePath) {
   const method = route.method.padEnd(6);

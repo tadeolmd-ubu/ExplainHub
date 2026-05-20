@@ -13,6 +13,7 @@ export class StructureExtractor {
       "build",
       "coverage",
       ".env",
+      "generated",
     ]);
   }
 

@@ -18,14 +18,16 @@ export function traverse(node, parentPath = "") {
   }
   return files;
 }
+
+const parseableTypes = new Set([
+  "javascript",
+  "typescript",
+  "markup",
+  "stylesheet",
+]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);
-  return (
-    type === "javascript" ||
-    type === "typescript" ||
-    type === "markup" ||
-    type === "stylesheet"
-  );
+  return parseableTypes.has(type);
 }
 export async function readFile(filePath) {
   return fs.readFile(filePath, "utf-8");
