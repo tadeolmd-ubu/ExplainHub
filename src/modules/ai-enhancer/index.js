@@ -1,5 +1,5 @@
 import { Ollama } from "ollama";
-import { buildPrompt } from "../ai-enhancer/promt/promt.js";
+import { buildPrompt } from "../ai-enhancer/prompt/prompt.js";
 
 function cleanMarkdown(text) {
   const lines = text

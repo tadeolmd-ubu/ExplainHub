@@ -10,7 +10,7 @@ export const config = {
   port: parseInt(optional("PORT", "3000"), 10),
   ollama: {
     url: optional("OLLAMA_URL", "http://localhost:11434"),
-    model: required("OLLAMA_MODEL"),
+    model: optional("OLLAMA_MODEL", ""),
   },
   redis: {
     host: optional("REDIS_HOST", "127.0.0.1"),
