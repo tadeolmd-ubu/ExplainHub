@@ -9,7 +9,7 @@ import { parseByType } from "./parsers/parserFactory.js";
 import { ParserError } from "./errors/parserError.js";
 
 //npm install --save-dev @babel/parser
-class CodeParser {
+export class CodeParser {
   async parse(tree, projectPath) {
     const files = [];
     for (const child of tree.children || []) {
@@ -51,5 +51,3 @@ class CodeParser {
     }
   }
 }
-
-export default CodeParser;
