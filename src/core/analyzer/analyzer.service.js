@@ -7,18 +7,17 @@ import { AiEnhancer } from "../../modules/ai-enhancer/index.js";
 export class AnalyzerService {
   async analyze(input) {
     let projectPath = input;
-
+    const cloner = new RepositoryCloner();
+    let result = null;
     if (
       input.startsWith("http://") ||
       input.startsWith("https://") ||
       input.startsWith("git@") ||
       input.startsWith("git://")
     ) {
-      const cloner = new RepositoryCloner();
-      const result = await cloner.clone(input);
+      result = await cloner.clone(input);
       projectPath = result.repoPath;
     }
-
     const extractor = new StructureExtractor();
     const { tree, technologies, entryPoints } =
       await extractor.extract(projectPath);
@@ -32,6 +31,8 @@ export class AnalyzerService {
       return { summary, plainText, technologies, files };
     } catch {
       return { summary: plainText, plainText, technologies, files };
+    } finally {
+      if (result) await cloner.cleanup(result.tempPath);
     }
   }
 }
