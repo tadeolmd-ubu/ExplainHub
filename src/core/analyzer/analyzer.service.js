@@ -3,6 +3,7 @@ import { StructureExtractor } from "../../modules/structure-extractor/index.js";
 import CodeParser from "../../modules/code-parser/index.js";
 import { TextGenerator } from "../../modules/text-generator/index.js";
 import { AiEnhancer } from "../../modules/ai-enhancer/index.js";
+import { validatePath } from "../../modules/security/index.js";
 
 export class AnalyzerService {
   async analyze(input) {
@@ -17,6 +18,9 @@ export class AnalyzerService {
     ) {
       result = await cloner.clone(input);
       projectPath = result.repoPath;
+    } else {
+      const { safe, reason } = validatePath(input);
+      if (!safe) throw new Error(reason);
     }
     const extractor = new StructureExtractor();
     const { tree, technologies, entryPoints } =
