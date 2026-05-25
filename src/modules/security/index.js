@@ -1,0 +1,1 @@
+export { validatePath } from "./pathValidator.js";
