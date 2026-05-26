@@ -10,10 +10,9 @@
 
   ## File Structure
 
-  | File | Purpose |
-  |------|---------|
-  | `index.js` | Core `RepositoryCloner` class |
-  | `test/test.js` | Usage example / test script |
+| File | Purpose |
+|------|---------|
+| `index.js` | Core `RepositoryCloner` class |
 
   ---
 
@@ -34,20 +33,13 @@
 
   ### Methods
 
-  <<<<<<< develop
-  #### `clone(repositoryUrl, processCallback?)`
-  =======
-  #### `clone(repositoryUrl)`
-  >>>>>>> main
+#### `clone(repositoryUrl, processCallback?)`
 
   Main entry point. Validates the URL, prepares the folder structure, and executes the clone.
 
-  **Parameters:**
-  - `repositoryUrl` (string) - URL or local path of the Git repository
-  <<<<<<< develop
-  - `processCallback` (function, optional) - Async callback que recibe el `CloneResult`. Si se pasa, el clon se borra automáticamente al terminar el callback.
-  =======
-  >>>>>>> main
+**Parameters:**
+- `repositoryUrl` (string) - URL or local path of the Git repository
+- `processCallback` (function, optional) - Async callback that receives the `CloneResult`. If provided, the cloned repo is automatically deleted after the callback completes.
 
   **Returns:**
   ```javascript
@@ -61,14 +53,15 @@
 
   **Throws** if the URL format is not supported or if Git cannot complete the clone.
 
-  <<<<<<< develop
-  **Comportamiento con callback:**
-  ```javascript
-  await cloner.clone(url, async (result) => {
-    // IA usa result.repoPath...
-    // Al salir de este bloque el repo se borra solo
-  });
-  ```
+**Behavior with callback:**
+```javascript
+await cloner.clone(url, async (result) => {
+  // Use result.repoPath...
+  // Repo is auto-cleaned when this block exits
+});
+```
+
+---
 
   =======
   >>>>>>> main
@@ -139,15 +132,36 @@
 
   ---
 
-  ## Flow / Logic
+The module follows a **four-phase pipeline** when `clone()` is used with a callback:
 
-  <<<<<<< develop
-  The module follows a **four-phase pipeline** cuando se usa `clone()` con callback:
+```
+clone(repositoryUrl, processCallback?)
+    |
+    +-- Phase 1: VALIDATE
+    |       validateRepositoryUrl()
+    |           -> isSupportedRemoteUrl()?  accept
+    |           -> isLikelyLocalPath()?     accept
+    |           -> neither?                 throw Error
+    |
+    +-- Phase 2: PREPARE
+    |       ensureBaseTempDirectory()       -> mkdir /temp
+    |       createCloneId()
+    |           -> extractRepositoryName()  -> parse last URL segment
+    |       mkdir(tempPath)                 -> create clone container
+    |
+    +-- Phase 3: CLONE
+    |       git.clone(url, repoPath, ["--depth", "1"])
+    |           -> success: continue
+    |           -> failure: cleanup(tempPath) -> throw Error
+    |
+    +-- Phase 4: PROCESS & CLEANUP (only if callback provided)
+            processCallback(result)         -> execute user logic
+                -> finally: cleanup(tempPath) -> remove repo
+```
 
-  ```
-  clone(repositoryUrl, processCallback?)
-  =======
-  The module follows a **three-phase pipeline**:
+Without a callback, the flow ends at Phase 3 and the repo **remains in temp/** (the caller must manage cleanup).
+
+---
 
   ```
   clone(repositoryUrl)
@@ -178,14 +192,7 @@
 
   Sin callback, el flujo termina en Phase 3 y el repo **permanece en temp/** (el llamado debe gestionar la limpieza por su cuenta).
 
-  =======
-              git.clone(url, repoPath, ["--depth", "1"])
-                  -> success: return { repositoryUrl, tempPath, repoPath, cloneId }
-                  -> failure: cleanup(tempPath) -> throw Error
-  ```
-
-  >>>>>>> main
-  ---
+---
 
   ## Folder Structure Generated
 
@@ -199,7 +206,10 @@
 
   ---
 
-  ## Dependencies
+### Clone, process with AI, and auto-clean
+
+```javascript
+import { RepositoryCloner } from "./src/modules/cloner/index.js";
 
   | Import | Source | Purpose |
   |--------|--------|---------|
@@ -207,19 +217,15 @@
   | `path` | `node:path` | Cross-platform path construction |
   | `simpleGit` | `simple-git` | Executes Git commands as promises |
 
-  ---
+await cloner.clone("https://github.com/facebook/react", async (result) => {
+  const extractor = new StructureExtractor();
+  const { tree } = await extractor.extract(result.repoPath);
 
-  ## Usage Example
+  // Process with TextGenerator, AiEnhancer, etc.
 
-  <<<<<<< develop
-  ### Clonar, procesar con IA y borrar automaticamente
-
-  =======
-  >>>>>>> main
-  ```javascript
-  import { RepositoryCloner } from "./src/modules/cloner/index.js";
-
-  const cloner = new RepositoryCloner();
+  // Repo is auto-cleaned when this block exits
+});
+```
 
   <<<<<<< develop
   await cloner.clone("https://github.com/facebook/react", async (result) => {
@@ -229,35 +235,9 @@
 
     // ... parsear, generar texto, enviar a IA ...
 
-    // Al salir de este bloque, cloner borra temp/ automaticamente
-  });
-  =======
-  const result = await cloner.clone("https://github.com/facebook/react");
-
-  console.log(result.repoPath);    // /project/temp/2025-05-03T...-react/repository
-  console.log(result.cloneId);     // 2025-05-03T10-30-00-000Z-react
-  >>>>>>> main
-  ```
-
-  ---
-
-  ## Test
-
-  ```bash
-  node test/test.js https://github.com/user/repo
-  ```
-
-  ---
-
-  ## Architecture Notes
-
-  - **Single responsibility per method:** each method does exactly one thing, making isolated changes and testing straightforward.
-  - **Fail fast:** URL validation runs before any filesystem or network operation.
-  - **Automatic cleanup:** the `try/catch` in `clone()` guarantees no orphaned folders remain in `/temp` if the operation fails.
-  - **Shallow clone:** `--depth 1` downloads only the latest commit, keeping the process fast and lightweight for source code analysis.
-  <<<<<<< develop
-  - **Flexible configuration:** the constructor accepts optional overrides without requiring them, making the class easy to use in both production and test environments.
-  - **Callback opcional:** `clone()` acepta un segundo parámetro opcional. Si se omite, el comportamiento es identico al original (compatibilidad hacia atras). Si se pasa, el clon se borra automaticamente al terminar el callback.
-  =======
-  - **Flexible configuration:** the constructor accepts optional overrides without requiring them, making the class easy to use in both production and test environments.
-  >>>>>>> main
+- **Single responsibility per method:** each method does exactly one thing, making isolated changes and testing straightforward.
+- **Fail fast:** URL validation runs before any filesystem or network operation.
+- **Automatic cleanup:** the `try/catch` in `clone()` guarantees no orphaned folders remain in `/temp` if the operation fails.
+- **Shallow clone:** `--depth 1` downloads only the latest commit, keeping the process fast and lightweight.
+- **Flexible configuration:** the constructor accepts optional overrides without requiring them.
+- **Optional callback:** `clone()` accepts a second optional parameter. If omitted, behavior is identical to the original (backward compatible). If provided, the clone is auto-deleted after the callback completes.

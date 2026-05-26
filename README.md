@@ -1,10 +1,10 @@
 # ExplainHub
 
-explainHub is a software solution that helps you understand any codebase. It analyzes a Git repository's structure, parses source files via AST, and generates a plain text summary. This summary can be enhanced by a local LLM (Ollama) to produce a polished narrative report.
+explainHub analyzes any Git repository — clones it, parses its source code via AST, and generates a structured plain-text summary. Optionally enhances the summary with a local LLM (Ollama) to produce a polished narrative report in Spanish.
 
 ---
 
-## Pipeline Overview
+## Pipeline
 
 ```
 Repository (local or remote)
@@ -16,7 +16,7 @@ RepositoryCloner      →  Clones repo to temp directory
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
     ▼
-CodeParser            →  Parses JS/TS files with @babel/parser AST
+CodeParser            →  Parses JS/TS/HTML/CSS with @babel/parser AST
                         Extracts imports, exports, functions, classes, routes
     │
     ▼
@@ -24,24 +24,25 @@ TextGenerator         →  Transforms analysis data into plain text sections
     │
     ▼
 AiEnhancer            →  Sends plain text to local LLM (Ollama)
-                        Returns a streaming narrative report in Spanish
+                        Returns a narrative report in Spanish
 ```
 
 ---
 
-##  Features
+## Features
 
 | Step | Module | What it does |
 |------|--------|-------------|
 | 1 | RepositoryCloner | Clones remote or local repos into `/temp` |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS via `@babel/parser` AST |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS via `@babel/parser` AST |
 | 4 | TextGenerator | Produces structured plain text report |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary |
+| — | Security | Validates paths and repository size before processing |
 
 ---
 
-##  Installation
+## Installation
 
 ```bash
 git clone https://github.com/tadeolmd-ubu/ExplainHub.git
@@ -76,35 +77,28 @@ REDIS_PORT=6379
 
 ---
 
-##  Quick Start
+## Quick Start
 
-### 1. Analyze a local project
-
-```bash
-node test/test-text-generator.js /path/to/your/project
-```
-
-This runs the full pipeline (StructureExtractor → CodeParser → TextGenerator) and outputs a structured plain text report.
-
-### 2. Generate AI-enhanced summary
-
-```bash
-node test/test-ai-enhancer.js /path/to/your/project
-```
-
-Requires Ollama running with a model configured in `.env`.
-
-### 3. Run the server
+### 1. Analyze a local project with the API
 
 ```bash
 npm run dev
+curl -X POST http://localhost:3000/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"projectPath": "/path/to/your/project"}'
 ```
 
-Test: `GET http://localhost:3000/health`
+### 2. Run tests
+
+```bash
+node --test test/.test.js
+```
+
+Requires Ollama running for the AI enhancer test.
 
 ---
 
-##  Module Documentation
+## Module Documentation
 
 | Module | Docs | Source |
 |--------|------|--------|
@@ -113,33 +107,59 @@ Test: `GET http://localhost:3000/health`
 | CodeParser | [docs/code-parser.md](docs/code-parser.md) | `src/modules/code-parser/` |
 | TextGenerator | [docs/text-generator.md](docs/text-generator.md) | `src/modules/text-generator/` |
 | AiEnhancer | [docs/ai-enhancer.md](docs/ai-enhancer.md) | `src/modules/ai-enhancer/` |
+| Security | [docs/security.md](docs/security.md) | `src/modules/security/` |
+| AnalyzerService | [docs/analyzer.md](docs/analyzer.md) | `src/core/analyzer/` |
 
 ---
 
-##  Project Structure
+## Project Structure
 
 ```
 src/
-├── api/controller.js              # API handler (placeholder)
+├── api/controller.js              # POST /api/analyze handler
 ├── app.js                         # Express app setup
-├── config/env.js                  # Env config loader (placeholder)
-├── core/analyzer/                 # Orchestration layer (placeholder)
-├── middleware/                     # Express middleware (placeholder)
+├── config/env.js                  # Environment configuration
+├── core/analyzer/
+│   ├── analyzer.service.js        # Orchestrates the full pipeline
+│   └── analyzer.routes.js         # Route definitions
+├── middleware/
+│   └── error.middleware.js        # Global error handler
 ├── modules/
 │   ├── cloner/                    # RepositoryCloner
 │   ├── structure-extractor/       # StructureExtractor
 │   ├── code-parser/               # CodeParser + AST extractors
 │   ├── text-generator/            # TextGenerator + formatters
-│   ├── file-analyzer/             # Placeholder
-│   └── ai-enhancer/               # AiEnhancer + Ollama integration
-├── routes/                        # Express routes (placeholder)
-└── utils/                         # Shared utilities (placeholder)
+│   ├── ai-enhancer/               # AiEnhancer + Ollama integration
+│   ├── security/                  # Path & size validation
+│   └── file-analyzer/             # Placeholder
+├── routes/
+│   └── analyzer.routes.js         # Express routes
+└── utils/
+    └── file.utils.js              # Placeholder
 server.js                          # Entry point
 ```
 
 ---
 
-##  Tech Stack
+## API
+
+### `POST /api/analyze`
+
+**Request:**
+```json
+{ "projectPath": "https://github.com/user/repo.git" }
+```
+
+**Response:**
+```json
+{ "summary": "Informe completo del proyecto..." }
+```
+
+Accepts both remote Git URLs and local filesystem paths.
+
+---
+
+## Tech Stack
 
 | Technology | Purpose |
 |------------|---------|
@@ -152,7 +172,7 @@ server.js                          # Entry point
 
 ---
 
-##  Architecture Principles
+## Architecture Principles
 
 - **Modular**: Each feature is a self-contained module in `src/modules/`
 - **Pipeline-oriented**: Modules connect sequentially, each transforming the output of the previous
@@ -162,6 +182,6 @@ server.js                          # Entry point
 
 ---
 
-##  Contributing
+## Contributing
 
 Contributions are welcome. Feel free to open issues or submit pull requests.

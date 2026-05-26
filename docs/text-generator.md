@@ -87,6 +87,7 @@ Generates a dependency map per file:
 ```
 DEPENDENCY MAP
 ==============
+
 src/server.js
   imports: express, path, ./routes
 ```
@@ -122,7 +123,7 @@ Zero external dependencies. Pure JavaScript functions operating on plain objects
 ```javascript
 import { TextGenerator } from "./src/modules/text-generator/index.js";
 import { StructureExtractor } from "./src/modules/structure-extractor/index.js";
-import CodeParser from "./src/modules/code-parser/index.js";
+import { CodeParser } from "./src/modules/code-parser/index.js";
 
 const extractor = new StructureExtractor();
 const { tree, technologies, entryPoints } = await extractor.extract("/path/to/project");
