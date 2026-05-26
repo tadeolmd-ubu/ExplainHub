@@ -1,4 +1,4 @@
-# Structure Extractor Module
+# StructureExtractor Module
 
 ## Overview
 
@@ -15,7 +15,6 @@ The `StructureExtractor` module performs static analysis of a project directory.
 | `index.js` | Core `StructureExtractor` class |
 | `techRules.js` | Technology detection rules |
 | `entryRules.js` | Entry point detection rules |
-| `test.js` | Usage example / test script |
 
 ---
 
@@ -26,14 +25,6 @@ The `StructureExtractor` module performs static analysis of a project directory.
 ```javascript
 constructor()
 ```
-
-Initializes `this.ignoredNames` as a `Set` containing common directories/files to skip:
-- `node_modules`
-- `.git`
-- `dist`
-- `build`
-- `coverage`
-- `.env`
 
 ### Methods
 
@@ -91,7 +82,14 @@ Wrapper around `fs.readdir` for async filesystem operations.
 
 #### `shouldIgnore(name)`
 
-Checks if a name is in the `ignoredNames` Set.
+Checks if a name is in the `ignoredNames` Set:
+- `node_modules`
+- `.git`
+- `dist`
+- `build`
+- `coverage`
+- `.env`
+- `generated`
 
 #### `detectTechnologies(tree)`
 
@@ -124,12 +122,12 @@ extract(projectPath)
     |       detectTechnologies(tree)
     |           -> traverse(tree)
     |               -> For each file node:
-    |                   -> Check techRules.exact[name]  (exact filename match)
-    |                   -> Check techRules.extensions  (file extension match)
+    |                   -> Check techRules.exact[name]
+    |                   -> Check techRules.extensions
     |
     +-- Phase 3: FIND ENTRY POINTS
             findEntryPoints(tree, technologies)
-                -> Initialize entryPoints object with technology keys
+                -> Initialize entryPoints object per technology
                 -> traverse(tree)
                     -> For each file node:
                         -> Check if name is in entryRules[tech]
@@ -171,8 +169,6 @@ export const entryRules = {
   "Java": ["Main.java"],
 };
 ```
-
-Maps each technology to its common entry point filenames.
 
 ---
 

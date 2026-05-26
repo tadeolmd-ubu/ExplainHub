@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript/TypeScript files using `@babel/parser` AST and extracts structural information: imports, exports, functions, classes, and HTTP routes.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, and CSS files using `@babel/parser` AST and regex-based parsers, extracting structural information: imports, exports, functions, classes, and HTTP routes.
 
 **Location:** `src/modules/code-parser/`
 
@@ -14,14 +14,12 @@ The `CodeParser` module parses JavaScript/TypeScript files using `@babel/parser`
 |------|---------|
 | `index.js` | Core `CodeParser` class |
 | `fileTypes.js` | Extension-to-type mapping |
-| `parser.js` | Placeholder |
-| `patterns.js` | Placeholder |
-| `constants/supportedExtensions.js` | Placeholder |
-| `errors/parserError.js` | Placeholder |
+| `errors/parserError.js` | Custom `ParserError` class |
 | `parsers/parserFactory.js` | Routes files to the correct parser by type |
 | `parsers/jsParser.js` | JavaScript parser using `@babel/parser` |
-| `parsers/tsParser.js` | Placeholder for TypeScript parser |
-| `parsers/htmlParser.js` | Placeholder for HTML parser |
+| `parsers/tsParser.js` | TypeScript parser using `@babel/parser` |
+| `parsers/htmlParser.js` | HTML parser (regex-based) |
+| `parsers/cssParser.js` | CSS parser (regex-based) |
 | `extractors/importExtractor.js` | Extracts ESM and CJS imports |
 | `extractors/exportsExtractor.js` | Extracts default, named, and re-exports |
 | `extractors/declarationExportExtractor.js` | Extracts exports from declarations |
@@ -29,8 +27,6 @@ The `CodeParser` module parses JavaScript/TypeScript files using `@babel/parser`
 | `extractors/functionExtractor.js` | Extracts function declarations, methods, arrows |
 | `extractors/classExtractor.js` | Extracts class declarations with methods |
 | `extractors/routesExtractor.js` | Extracts Express-style route definitions |
-| `validators/extensionValidator.js` | Placeholder |
-| `validators/parserValidator.js` | Placeholder |
 | `utils/fileUtils.js` | Tree traversal, file reading, type detection |
 
 ---
@@ -62,6 +58,33 @@ Main entry point. Flattens the directory tree into a file list and parses each p
 
 ---
 
+## Parsers
+
+### JavaScript Parser (`jsParser.js`)
+
+Uses `@babel/parser` with `sourceType: "unambiguous"` and plugins `dynamicImport`, `jsx`.
+
+### TypeScript Parser (`tsParser.js`)
+
+Uses `@babel/parser` with `sourceType: "module"` and plugins `typescript`, `jsx`.
+
+### HTML Parser (`htmlParser.js`)
+
+Regex-based. Extracts:
+- `<title>` as exports
+- `<script src>` as imports
+- `<link href>` as imports
+
+### CSS Parser (`cssParser.js`)
+
+Regex-based. Extracts:
+- CSS classes (`.class-name`) as exports
+- `@keyframes` as exports
+- `--variables` as functions
+- `@import` as imports
+
+---
+
 ## Extractors
 
 ### Import Extractor
@@ -76,7 +99,7 @@ Detects both ESM (`import ... from`) and CJS (`require()`) imports.
 ```
 
 ### Export Extractor
-Detects default exports, named exports, re-exports, and `export *`.
+Detects default exports, named exports, re-exports, `export *`, and CJS `module.exports`.
 
 ```javascript
 { name: "app", kind: "default", line: 1 }
@@ -110,13 +133,29 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 
 ## File Types
 
-| Extension | Type |
-|-----------|------|
-| `.js`, `.mjs`, `.cjs`, `.jsx` | `javascript` |
-| `.ts`, `.tsx` | `typescript` |
-| `.css` | `stylesheet` |
-| `.json` | `data` |
-| `.html` | `markup` |
+| Extension | Type | Parseable |
+|-----------|------|-----------|
+| `.js`, `.mjs`, `.cjs`, `.jsx` | `javascript` | Yes |
+| `.ts`, `.tsx` | `typescript` | Yes |
+| `.html` | `markup` | Yes |
+| `.css` | `stylesheet` | Yes |
+| `.json` | `data` | No |
+
+---
+
+## Error Handling
+
+The `ParserError` class provides structured error information:
+
+```javascript
+class ParserError extends Error {
+  constructor(filePath, reason, fileType)
+  // name: "ParserError"
+  // filePath, reason, fileType properties
+}
+```
+
+Each file is wrapped in a try/catch — a parse failure in one file does not stop the entire analysis.
 
 ---
 
@@ -133,6 +172,9 @@ CodeParser.parse(tree, projectPath)
         +-- getFileType(filePath)  →  "javascript"
         +-- parseByType(type, content)
             +-- jsParser: @babel/parser → AST
+            +-- tsParser: @babel/parser → AST
+            +-- htmlParser: regex-based
+            +-- cssParser: regex-based
             +-- extractImports(ast)
             +-- extractExports(ast)
             +-- extractFunctions(ast)
@@ -156,7 +198,7 @@ CodeParser.parse(tree, projectPath)
 ## Usage Example
 
 ```javascript
-import CodeParser from "./src/modules/code-parser/index.js";
+import { CodeParser } from "./src/modules/code-parser/index.js";
 import { StructureExtractor } from "./src/modules/structure-extractor/index.js";
 
 const extractor = new StructureExtractor();
@@ -175,4 +217,5 @@ console.log(files[0].routes);   // routes of first file
 
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
-- **Tree-consumer:** Designed to work with the tree output of `StructureExtractor`, but accepts any flat file list.
+- **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
+- **Multi-language:** Supports JS, TS, HTML, and CSS out of the box.
