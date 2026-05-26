@@ -10,9 +10,11 @@ export function extractRoutes(ast) {
         node.callee.property?.name &&
         httpMethods.includes(node.callee.property.name.toLowerCase())
       ) {
+        const pathArg = node.arguments[0];
+        if (!pathArg || pathArg.type !== "StringLiteral") return;
         routes.push({
           method: node.callee.property.name.toUpperCase(),
-          path: node.arguments[0]?.value,
+          path: pathArg.value,
           line: node.loc?.start.line || 0,
         });
       }

@@ -6,9 +6,10 @@ import {
   isParseable,
 } from "./utils/fileUtils.js";
 import { parseByType } from "./parsers/parserFactory.js";
+import { ParserError } from "./errors/parserError.js";
 
 //npm install --save-dev @babel/parser
-class CodeParser {
+export class CodeParser {
   async parse(tree, projectPath) {
     const files = [];
     for (const child of tree.children || []) {
@@ -34,17 +35,19 @@ class CodeParser {
   async #processFile(filePath) {
     const fileContent = await readFile(filePath);
     const fileType = getFileType(filePath);
-    const parsed = parseByType(fileType, fileContent);
-    return {
-      filePath,
-      type: fileType,
-      imports: parsed.imports,
-      exports: parsed.exports,
-      classes: parsed.classes,
-      routes: parsed.routes,
-      functions: parsed.functions,
-    };
+    try {
+      const parsed = parseByType(fileType, fileContent);
+      return {
+        filePath,
+        type: fileType,
+        imports: parsed.imports,
+        exports: parsed.exports,
+        classes: parsed.classes,
+        routes: parsed.routes,
+        functions: parsed.functions,
+      };
+    } catch (error) {
+      throw new ParserError(filePath, error.message, fileType);
+    }
   }
 }
-
-export default CodeParser;

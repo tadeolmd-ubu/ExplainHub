@@ -4,17 +4,17 @@ import path from "node:path";
 import { techRules } from "./techRules.js";
 import { entryRules } from "./entryRules.js";
 
+export const ignoredNames = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "coverage",
+  ".env",
+  "generated",
+]);
 export class StructureExtractor {
-  constructor() {
-    this.ignoredNames = new Set([
-      "node_modules",
-      ".git",
-      "dist",
-      "build",
-      "coverage",
-      ".env",
-    ]);
-  }
+  constructor() {}
 
   async extract(projectPath) {
     try {
@@ -136,7 +136,7 @@ export class StructureExtractor {
   // DECIDE QUE TIPO DE ARCHIVOS IGNORAR
   //
   shouldIgnore(name) {
-    return this.ignoredNames.has(name);
+    return ignoredNames.has(name);
   }
 
   //

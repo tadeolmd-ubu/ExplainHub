@@ -1,5 +1,26 @@
 import { Ollama } from "ollama";
-import { buildPrompt } from "../ai-enhancer/promt/promt.js";
+import { buildPrompt } from "../ai-enhancer/prompt/prompt.js";
+
+function cleanMarkdown(text) {
+  const lines = text
+    .replace(/\*\*/g, "")
+    .replace(/###?\s?/g, "")
+    .replace(/---/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .split("\n");
+
+  const clean = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith("|") || trimmed.startsWith("+")) continue;
+    if (trimmed.startsWith("```")) continue;
+    clean.push(line);
+  }
+
+  return clean.join("\n").trim();
+}
 
 export class AiEnhancer {
   constructor() {
@@ -10,10 +31,17 @@ export class AiEnhancer {
   }
   async enhance(plainText) {
     const prompt = buildPrompt(plainText);
-    return this.ollama.generate({
+    const stream = await this.ollama.generate({
       model: this.model,
       prompt,
       stream: true,
     });
+
+    const chunks = [];
+    for await (const part of stream) {
+      chunks.push(part.response);
+    }
+
+    return cleanMarkdown(chunks.join(""));
   }
 }
