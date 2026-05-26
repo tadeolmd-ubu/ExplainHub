@@ -21,7 +21,7 @@ function isSensitivePath(resolved) {
   }
   return false;
 }
-function resolvePath(input) {
+export function resolvePath(input) {
   if (input.startsWith("~")) {
     return resolve(input.replace("~", homedir()));
   }

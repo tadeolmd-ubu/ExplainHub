@@ -1,9 +1,12 @@
 import { RepositoryCloner } from "../../modules/cloner/index.js";
 import { StructureExtractor } from "../../modules/structure-extractor/index.js";
-import CodeParser from "../../modules/code-parser/index.js";
+import { CodeParser } from "../../modules/code-parser/index.js";
 import { TextGenerator } from "../../modules/text-generator/index.js";
 import { AiEnhancer } from "../../modules/ai-enhancer/index.js";
-import { validatePath } from "../../modules/security/index.js";
+import {
+  validatePath,
+  validateRepositorySize,
+} from "../../modules/security/index.js";
 
 export class AnalyzerService {
   async analyze(input) {
@@ -21,6 +24,8 @@ export class AnalyzerService {
     } else {
       const { safe, reason } = validatePath(input);
       if (!safe) throw new Error(reason);
+      const sizeResult = await validateRepositorySize(projectPath);
+      if (!sizeResult.safe) throw new Error(sizeResult.reason);
     }
     const extractor = new StructureExtractor();
     const { tree, technologies, entryPoints } =
