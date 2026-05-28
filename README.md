@@ -1,6 +1,6 @@
 # ExplainHub
 
-explainHub analyzes any Git repository — clones it, parses its source code via AST, and generates a structured plain-text summary. Optionally enhances the summary with a local LLM (Ollama) to produce a polished narrative report in Spanish.
+explainHub analyzes any Git repository — clones it, parses its source code via AST, and generates a structured plain-text summary. Optionally enhances the summary with a local LLM (Ollama) to produce a polished narrative report in Spanish or Markdown.
 
 ---
 
@@ -24,7 +24,10 @@ TextGenerator         →  Transforms analysis data into plain text sections
     │
     ▼
 AiEnhancer            →  Sends plain text to local LLM (Ollama)
-                        Returns a narrative report in Spanish
+                        Returns a narrative report in txt or md
+    │
+    ▼
+Output                →  Console + optional save to .txt/.md file
 ```
 
 ---
@@ -37,9 +40,9 @@ AiEnhancer            →  Sends plain text to local LLM (Ollama)
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
 | 3 | CodeParser | Parses JS/TS/HTML/CSS via `@babel/parser` AST |
 | 4 | TextGenerator | Produces structured plain text report |
-| 5 | AiEnhancer | Sends report to Ollama for AI-powered summary |
+| 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
-| — | CLI | Interactive menu to select between URL, local path, or .zip |
+| — | CLI | Interactive menu: URL, local path, .zip, format selection, save to file |
 
 ---
 
@@ -84,7 +87,7 @@ OLLAMA_URL=http://localhost:11434
 explain
 ```
 
-Select the input type (URL, local path, or .zip) and follow the prompts.
+Follow the prompts: select input type (URL, local path, .zip), choose format (txt/md), and optionally save the result to a file.
 
 ### 2. Run tests
 
@@ -106,6 +109,7 @@ Requires Ollama running for the AI enhancer test.
 | TextGenerator | [docs/text-generator.md](docs/text-generator.md) | `src/modules/text-generator/` |
 | AiEnhancer | [docs/ai-enhancer.md](docs/ai-enhancer.md) | `src/modules/ai-enhancer/` |
 | Security | [docs/security.md](docs/security.md) | `src/modules/security/` |
+| CLI | — | `src/modules/cli/` |
 | AnalyzerService | [docs/analyzer.md](docs/analyzer.md) | `src/core/analyzer/` |
 
 ---
