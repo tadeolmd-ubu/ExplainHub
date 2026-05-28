@@ -36,3 +36,7 @@ export function getFileType(filePath) {
   const ext = path.extname(filePath);
   return fileTypes[ext] || "unknown";
 }
+
+export function saveFile(content, filePath) {
+  return fs.writeFile(filePath, content, "utf-8");
+}

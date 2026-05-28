@@ -1,6 +1,6 @@
 import { Ollama } from "ollama";
-import { buildPrompt } from "../ai-enhancer/prompt/prompt.js";
-
+import { buildPromptTxt } from "./prompt/promptTxt.js";
+import { buildPromptMd } from "./prompt/promptMd.js";
 function cleanMarkdown(text) {
   const lines = text
     .replace(/\*\*/g, "")
@@ -29,19 +29,20 @@ export class AiEnhancer {
     });
     this.model = process.env.OLLAMA_MODEL;
   }
-  async enhance(plainText) {
-    const prompt = buildPrompt(plainText);
+  async enhance(plainText, format = "txt") {
+    const buildPrompt = format === "md" ? buildPromptMd : buildPromptTxt;
+    const rawPrompt = buildPrompt(plainText);
     const stream = await this.ollama.generate({
       model: this.model,
-      prompt,
+      prompt: rawPrompt,
       stream: true,
     });
-
     const chunks = [];
     for await (const part of stream) {
       chunks.push(part.response);
     }
-
-    return cleanMarkdown(chunks.join(""));
+    const result = chunks.join("");
+    return format === "md" ? result : cleanMarkdown(result);
   }
 }
+

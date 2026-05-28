@@ -13,7 +13,8 @@ The `AiEnhancer` module takes the plain text output from `TextGenerator` and sen
 | File | Purpose |
 |------|---------|
 | `index.js` | Core `AiEnhancer` class |
-| `prompt/prompt.js` | Prompt template sent to the LLM |
+| `prompt/promptTxt.js` | Prompt template for plain text output |
+| `prompt/promptMd.js` | Prompt template for Markdown output |
 
 ---
 
@@ -25,14 +26,15 @@ Reads configuration from environment variables:
 - `OLLAMA_MODEL` - Model name to use (e.g. `qwen3.5`)
 - `OLLAMA_URL` (default: `"http://localhost:11434"`) - Ollama server URL
 
-### `enhance(plainText)`
+### `enhance(plainText, format)`
 
 Sends the plain text analysis to the LLM and returns the full response.
 
 **Parameters:**
 - `plainText` (string) - Output from `TextGenerator.generate()`
+- `format` (string) - `"txt"` or `"md"` — selects which prompt template to use
 
-**Returns:** `Promise<string>` - The complete AI-generated narrative report.
+**Returns:** `Promise<string>` - The complete AI-generated narrative report in txt or md.
 
 ### Response Cleaning
 
@@ -45,36 +47,28 @@ Raw markdown from the LLM is cleaned:
 
 ---
 
-## Prompt Template
+## Prompt Templates
 
-The prompt (`prompt/prompt.js`) wraps the analysis text with instructions for the LLM:
+There are two prompt files, chosen by the `format` parameter:
 
-```
-Eres un experto en análisis de código. A partir del siguiente análisis técnico de un proyecto real, genera un informe en español con estos apartados. IMPORTANTE: Basa tu respuesta ÚNICAMENTE en la información proporcionada. NO inventes módulos, archivos o funcionalidades que no aparezcan en el análisis.
+**`promptTxt.js`** — instructs the model to return plain text with `----` separators.
 
-1. VISIÓN GENERAL - Qué hace el proyecto, tecnologías principales, tipo de arquitectura
-2. MÓDULOS Y COMPONENTES - Por cada módulo listado: su responsabilidad y cómo se relaciona con los demás (menciona SOLO los que aparecen en el análisis)
-3. API / RUTAS - Endpoints disponibles (solo si aparecen en el análisis)
-4. DEPENDENCIAS EXTERNAS - Librerías clave que usa el proyecto
-5. NÚCLEO DEL PROYECTO - Archivos más importados, por dónde empezar a leer
-6. SEGURIDAD - Prácticas observadas o faltantes
-7. RECOMENDACIONES - Sugerencias para empezar a desarrollar
+**`promptMd.js`** — instructs the model to return Markdown with `##` titles, **bold**, `code`, and tables.
 
-Responde en español. Usa SOLO texto plano. NO uses markdown, negritas, tablas ni enlaces.
-```
+Both share the same structure but differ in the formatting instruction at the end.
 
 ---
 
 ## Flow
 
 ```
-AiEnhancer.enhance(plainText)
+AiEnhancer.enhance(plainText, format)
     |
-    +-- buildPrompt(plainText)     → wrap text with instructions
+    +-- buildPrompt[format](plainText)  → choose txt or md prompt
     +-- ollama.generate({ model, prompt, stream: true })
     +-- collect stream chunks
-    +-- cleanMarkdown(raw)        → remove markdown artifacts
-    +-- return clean string
+    +-- if txt: cleanMarkdown(raw)      → remove markdown artifacts
+    +-- if md: return raw               → keep markdown
 ```
 
 ---
@@ -97,7 +91,7 @@ const generator = new TextGenerator();
 const plainText = generator.generate({ technologies, entryPoints, files });
 
 const enhancer = new AiEnhancer();
-const summary = await enhancer.enhance(plainText);
+const summary = await enhancer.enhance(plainText, "md"); // or "txt"
 
 console.log(summary);
 ```
@@ -109,5 +103,6 @@ console.log(summary);
 - **Thin wrapper:** The class is minimal — it reads config from `.env`, builds the prompt, and delegates to Ollama.
 - **Streaming internally:** Collects Ollama's streaming response into a complete string before returning.
 - **Markdown cleanup:** Strips common markdown syntax for clean plain text output.
-- **Prompt flexibility:** The template is isolated in `prompt/prompt.js` for easy editing without touching the core logic.
+- **Dual prompt templates:** `promptTxt.js` and `promptMd.js` let the user choose between plain text and Markdown output.
+- **Markdown passthrough:** When using md format, `cleanMarkdown` is skipped to preserve the Markdown syntax.
 - **Model-agnostic:** Works with any Ollama-compatible model. Configure via `.env`.

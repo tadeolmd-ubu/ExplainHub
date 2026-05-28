@@ -7,6 +7,7 @@ import {
 } from "./utils/fileUtils.js";
 import { parseByType } from "./parsers/parserFactory.js";
 import { ParserError } from "./errors/parserError.js";
+export {saveFile} from "./utils/fileUtils.js"
 
 //npm install --save-dev @babel/parser
 export class CodeParser {

@@ -19,17 +19,18 @@ The `AnalyzerService` orchestrates the full ExplainHub pipeline. It accepts a re
 
 ## Class: `AnalyzerService`
 
-### `analyze(input)`
+### `analyze(input, format)`
 
 Runs the complete analysis pipeline.
 
 **Parameters:**
 - `input` (string) - Git remote URL or local filesystem path
+- `format` (string) - `"txt"` or `"md"` (default: `"txt"`)
 
 **Returns:**
 ```javascript
 {
-  summary: string,       // AI-enhanced narrative (or plain text fallback)
+  summary: string,       // AI-enhanced narrative in txt or md (or plain text fallback)
   plainText: string,     // Raw TextGenerator output
   technologies: string[],
   files: FileResult[]
@@ -50,11 +51,13 @@ Runs the complete analysis pipeline.
 
 5. **TextGenerator.generate({ technologies, entryPoints, files })** → `plainText`
 
-6. **AiEnhancer.enhance(plainText)** → `summary`
+6. **AiEnhancer.enhance(plainText, format)** → `summary` (txt or md)
 
 7. **Auto-cleanup**: If the repo was cloned, `cloner.cleanup()` removes the temp directory.
 
 If AI enhancement fails, the plain text is returned as the summary.
+
+The CLI also offers saving the result to a .txt or .md file after displaying it.
 
 ---
 
@@ -106,7 +109,7 @@ Select "Url en la nube", "Ruta en los archivos", or ".zip" and follow the prompt
 CLI (explain)  or  POST /api/analyze { projectPath }
                 |
                 ▼
-        AnalyzerService.analyze(projectPath)
+        AnalyzerService.analyze(projectPath, format)
                 |
                 +-- Is remote URL? ──Yes──► RepositoryCloner.clone(url)
                 |                                   |
@@ -127,10 +130,11 @@ CLI (explain)  or  POST /api/analyze { projectPath }
         TextGenerator.generate({ technologies, entryPoints, files }) ──► plainText
                 |
                 ▼
-        AiEnhancer.enhance(plainText) ──► summary (or plainText fallback)
+        AiEnhancer.enhance(plainText, format) ──► summary (txt/md) or plainText fallback
                 |
                 ▼
-        Return { summary, plainText, technologies, files }
+        CLI: show result → confirm save → saveFile(summary, path)
+        API: return { summary, plainText, technologies, files }
 ```
 
 ---
