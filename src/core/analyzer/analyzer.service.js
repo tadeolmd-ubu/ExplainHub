@@ -37,9 +37,10 @@ export class AnalyzerService {
     try {
       const enhancer = new AiEnhancer();
       const summary = await enhancer.enhance(plainText);
-      return { summary, plainText, technologies, files };
-    } catch {
-      return { summary: plainText, plainText, technologies, files };
+      return { summary };
+    } catch (err) {
+      console.error("AI Enhancer error:", err.message);
+      return { summary: plainText };
     } finally {
       if (result) await cloner.cleanup(result.tempPath);
     }
