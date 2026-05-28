@@ -58,7 +58,19 @@ If AI enhancement fails, the plain text is returned as the summary.
 
 ---
 
-## API Endpoint
+## CLI Usage
+
+The service is consumed by the interactive CLI (`src/modules/cli/`):
+
+```bash
+explain
+```
+
+Select "Url en la nube", "Ruta en los archivos", or ".zip" and follow the prompts.
+
+---
+
+## Legacy API Endpoint
 
 ### `POST /api/analyze`
 
@@ -70,42 +82,6 @@ If AI enhancement fails, the plain text is returned as the summary.
 **Response:**
 ```json
 { "summary": "..." }
-```
-
-**Error response:**
-```json
-{ "error": "projectPath is required" }
-```
-
-### Route Registration
-
-Defined in `analyzer.routes.js`:
-```javascript
-router.post("/analyze", analyzeProject);
-```
-
-Mounted in `app.js` at `/api`:
-```javascript
-app.use("/api", analyzerRoutes);
-```
-
-### Health Check
-
-```
-GET /health → { "status": "ok" }
-```
-
----
-
-## Error Handling
-
-The middleware (`src/middleware/error.middleware.js`) catches unhandled errors:
-
-```javascript
-export function errorHandler(err, req, res, next) {
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({ error: err.message || "Error interno del servidor" });
-}
 ```
 
 ---
@@ -127,34 +103,34 @@ export function errorHandler(err, req, res, next) {
 ## Flow Diagram
 
 ```
-POST /api/analyze { projectPath }
-    |
-    ▼
-AnalyzerService.analyze(projectPath)
-    |
-    +-- Is remote URL? ──Yes──► RepositoryCloner.clone(url)
-    |                                   |
-    |                              repoPath
-    |                                   |
-    |                              (auto-cleaned in finally)
-    |                                   |
-    +-- No (local path) ──► validatePath()
-    |                           validateRepositorySize()
-    |
-    ▼
-StructureExtractor.extract(projectPath) ──► { tree, technologies, entryPoints }
-    |
-    ▼
-CodeParser.parse(tree, projectPath) ──► files[]
-    |
-    ▼
-TextGenerator.generate({ technologies, entryPoints, files }) ──► plainText
-    |
-    ▼
-AiEnhancer.enhance(plainText) ──► summary (or plainText fallback)
-    |
-    ▼
-Return { summary, plainText, technologies, files }
+CLI (explain)  or  POST /api/analyze { projectPath }
+                |
+                ▼
+        AnalyzerService.analyze(projectPath)
+                |
+                +-- Is remote URL? ──Yes──► RepositoryCloner.clone(url)
+                |                                   |
+                |                              repoPath
+                |                                   |
+                |                              (auto-cleaned in finally)
+                |                                   |
+                +-- No (local path) ──► validatePath()
+                |                           validateRepositorySize()
+                |
+                ▼
+        StructureExtractor.extract(projectPath) ──► { tree, technologies, entryPoints }
+                |
+                ▼
+        CodeParser.parse(tree, projectPath) ──► files[]
+                |
+                ▼
+        TextGenerator.generate({ technologies, entryPoints, files }) ──► plainText
+                |
+                ▼
+        AiEnhancer.enhance(plainText) ──► summary (or plainText fallback)
+                |
+                ▼
+        Return { summary, plainText, technologies, files }
 ```
 
 ---
