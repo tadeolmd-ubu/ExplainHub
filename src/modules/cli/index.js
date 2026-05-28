@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import * as c from "@clack/prompts";
 
+import { saveFile } from "../code-parser/utils/fileUtils.js";
 import { AnalyzerService } from "../../core/analyzer/analyzer.service.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -24,6 +25,19 @@ async function main() {
   });
 
   if (c.isCancel(typeProject)) {
+    c.outro("Cancelado");
+    process.exit(0);
+  }
+
+  const format = await c.select({
+    message: "¿En qué formato quieres el informe?",
+    options: [
+      { value: "txt", label: "Texto plano" },
+      { value: "md", label: "Markdown" },
+    ],
+  });
+
+  if (c.isCancel(format)) {
     c.outro("Cancelado");
     process.exit(0);
   }
@@ -52,9 +66,33 @@ async function main() {
     process.exit(0);
   }
 
-  const result = await service.analyze(projectPath);
+  const result = await service.analyze(projectPath, format);
   c.outro("Análisis completado");
   console.log(result.summary);
+
+  const shouldSave = await c.confirm({
+    message: "¿Guardar el resultado en un archivo?",
+  });
+
+  if (c.isCancel(shouldSave)) {
+    c.outro("Cancelado");
+    process.exit(0);
+  }
+
+  if (shouldSave) {
+    const filePath = await c.text({
+      message: "Ruta del archivo",
+      placeholder: `./summary.${format}`,
+    });
+
+    if (c.isCancel(filePath)) {
+      c.outro("Cancelado");
+      process.exit(0);
+    }
+
+    await saveFile(result.summary, filePath);
+    c.outro(`Guardado en ${filePath}`);
+  }
 }
 
 main().catch(console.error);

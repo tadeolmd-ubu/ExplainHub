@@ -9,7 +9,7 @@ import {
 } from "../../modules/security/index.js";
 
 export class AnalyzerService {
-  async analyze(input) {
+  async analyze(input, format = "txt") {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
@@ -36,7 +36,7 @@ export class AnalyzerService {
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
-      const summary = await enhancer.enhance(plainText);
+      const summary = await enhancer.enhance(plainText, format);
       return { summary };
     } catch (err) {
       console.error("AI Enhancer error:", err.message);
