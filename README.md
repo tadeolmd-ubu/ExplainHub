@@ -39,6 +39,7 @@ AiEnhancer            →  Sends plain text to local LLM (Ollama)
 | 4 | TextGenerator | Produces structured plain text report |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary |
 | — | Security | Validates paths and repository size before processing |
+| — | CLI | Interactive menu to select between URL, local path, or .zip |
 
 ---
 
@@ -48,6 +49,7 @@ AiEnhancer            →  Sends plain text to local LLM (Ollama)
 git clone https://github.com/tadeolmd-ubu/ExplainHub.git
 cd ExplainHub
 npm install
+npm link
 ```
 
 ### Install Ollama (optional, for AI enhancement)
@@ -56,8 +58,8 @@ npm install
 # Install Ollama
 curl -fsSL https://ollama.com/install.sh | sh
 
-# Pull a model (e.g., qwen3.5)
-ollama pull qwen3.5
+# Pull a model (e.g., gemma4 or qwen3.5)
+ollama pull gemma4
 
 # Start Ollama server
 ollama serve
@@ -68,25 +70,21 @@ ollama serve
 Copy `.env.example` to `.env`:
 
 ```env
-PORT=3000
-OLLAMA_MODEL=qwen3.5
+OLLAMA_MODEL=gemma4
 OLLAMA_URL=http://localhost:11434
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Analyze a local project with the API
+### 1. Analyze a project with the CLI
 
 ```bash
-npm run dev
-curl -X POST http://localhost:3000/api/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"projectPath": "/path/to/your/project"}'
+explain
 ```
+
+Select the input type (URL, local path, or .zip) and follow the prompts.
 
 ### 2. Run tests
 
@@ -116,15 +114,12 @@ Requires Ollama running for the AI enhancer test.
 
 ```
 src/
-├── api/controller.js              # POST /api/analyze handler
-├── app.js                         # Express app setup
 ├── config/env.js                  # Environment configuration
 ├── core/analyzer/
 │   ├── analyzer.service.js        # Orchestrates the full pipeline
 │   └── analyzer.routes.js         # Route definitions
-├── middleware/
-│   └── error.middleware.js        # Global error handler
 ├── modules/
+│   ├── cli/                       # Interactive CLI (@clack/prompts)
 │   ├── cloner/                    # RepositoryCloner
 │   ├── structure-extractor/       # StructureExtractor
 │   ├── code-parser/               # CodeParser + AST extractors
@@ -136,26 +131,8 @@ src/
 │   └── analyzer.routes.js         # Express routes
 └── utils/
     └── file.utils.js              # Placeholder
-server.js                          # Entry point
+server.js                           # Entry point (legacy API)
 ```
-
----
-
-## API
-
-### `POST /api/analyze`
-
-**Request:**
-```json
-{ "projectPath": "https://github.com/user/repo.git" }
-```
-
-**Response:**
-```json
-{ "summary": "Informe completo del proyecto..." }
-```
-
-Accepts both remote Git URLs and local filesystem paths.
 
 ---
 
@@ -164,11 +141,10 @@ Accepts both remote Git URLs and local filesystem paths.
 | Technology | Purpose |
 |------------|---------|
 | Node.js 20+ | Runtime |
-| Express | HTTP server |
 | @babel/parser | AST parsing for JS/TS |
 | simple-git | Git operations |
 | Ollama | Local LLM inference |
-| bullmq + ioredis | Job queue (future) |
+| @clack/prompts | Interactive CLI prompts |
 
 ---
 
