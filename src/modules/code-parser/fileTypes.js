@@ -8,4 +8,5 @@ export const fileTypes = {
   ".css": "stylesheet",
   ".json": "data",
   ".html": "markup",
+  ".sql": "sql",
 };
