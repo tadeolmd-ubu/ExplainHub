@@ -1,7 +1,3 @@
-import { Parser } from "node-sql-parser";
-
-const parser = new Parser();
-
 export function extractOtherCreate(node, sqlContent) {
   if (!node || typeof node !== "object") return null;
   switch (node.keyword) {

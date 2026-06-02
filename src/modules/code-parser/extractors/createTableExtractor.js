@@ -1,7 +1,3 @@
-import { Parser } from "node-sql-parser";
-
-const parser = new Parser();
-
 export function extractCreateTable(node) {
   const columns = [];
   const primaryKey = [];

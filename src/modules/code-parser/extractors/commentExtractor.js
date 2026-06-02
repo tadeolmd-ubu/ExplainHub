@@ -1,4 +1,3 @@
-
 export function extractComments(sqlContent) {
   try {
     if (!sqlContent) return [];
