@@ -2,13 +2,22 @@ import { Parser } from "node-sql-parser";
 
 const parser = new Parser();
 
-export function extractOtherCreate(node) {
+export function extractOtherCreate(node, sqlContent) {
   if (!node || typeof node !== "object") return null;
   switch (node.keyword) {
     case "view":
       return extractCreateView(node);
     case "index":
       return extractCreateIndex(node);
+    case "function":
+      return extractCreateFunction(node, sqlContent);
+    case "procedure":
+      return extractCreateProcedure(node, sqlContent);
+    case "trigger":
+      return extractCreateTrigger(node, sqlContent);
+    case "database":
+    case "schema":
+      return { name: node.database || node.table?.table };
     default:
       return null;
   }
@@ -54,4 +63,86 @@ function extractCreateIndex(node) {
   }
 }
 
-function extractCrrerrateFunction(node, sqlContent){}
+function extractCreateFunction(node, sqlContent) {
+  try {
+    if (!node || typeof node !== "object") return null;
+    if (!(node.type === "create" && node.keyword === "function")) return null;
+
+    const regex =
+      /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:`?\w+`?\.)?`?(\w+)`?\s*\(([^)]*)\)\s*RETURNS\s+(\w+)/i;
+    const match = sqlContent.match(regex);
+    if (!match) return null;
+
+    const params = [];
+    const paramRegex = /\s*(IN|OUT|INOUT)?\s*`?(\w+)`?\s+(\w+(?:\([^)]*\))?)/g;
+    let paramMatch;
+    while ((paramMatch = paramRegex.exec(match[2])) !== null) {
+      params.push({
+        mode: (paramMatch[1] || "IN").toUpperCase(),
+        name: paramMatch[2],
+        type: paramMatch[3],
+      });
+    }
+
+    return {
+      name: match[1],
+      params,
+      returnType: match[3],
+    };
+  } catch (err) {
+    console.error("Error extracting CREATE FUNCTION:", err);
+    return null;
+  }
+}
+function extractCreateProcedure(node, sqlContent) {
+  try {
+    if (!node || typeof node !== "object") return null;
+    if (!(node.type === "create" && node.keyword === "procedure")) return null;
+
+    const regex =
+      /CREATE\s+(?:OR\s+REPLACE\s+)?PROCEDURE\s+(?:`?\w+`?\.)?`?(\w+)`?\s*\(([^)]*)\)/i;
+    const match = sqlContent.match(regex);
+    if (!match) return null;
+
+    const params = [];
+    const paramRegex = /\s*(IN|OUT|INOUT)?\s*`?(\w+)`?\s+(\w+(?:\([^)]*\))?)/g;
+    let pm;
+    while ((pm = paramRegex.exec(match[2])) !== null) {
+      params.push({
+        mode: (pm[1] || "IN").toUpperCase(),
+        name: pm[2],
+        type: pm[3],
+      });
+    }
+
+    return {
+      name: match[1],
+      params,
+    };
+  } catch (err) {
+    console.error("Error extracting CREATE PROCEDURE:", err);
+    return null;
+  }
+}
+
+function extractCreateTrigger(node, sqlContent) {
+  try {
+    if (!node || typeof node !== "object") return null;
+    if (!(node.type === "create" && node.keyword === "trigger")) return null;
+
+    const regex =
+      /CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(?:`?\w+`?\.)?`?(\w+)`?\s*(BEFORE|AFTER)\s+(INSERT|UPDATE|DELETE)\s+ON\s+`?(\w+)`?/i;
+    const match = sqlContent.match(regex);
+    if (!match) return null;
+
+    return {
+      name: match[1],
+      timing: match[2].toUpperCase(),
+      event: match[3].toUpperCase(),
+      table: match[4],
+    };
+  } catch (err) {
+    console.error("Error extracting CREATE TRIGGER:", err);
+    return null;
+  }
+}
