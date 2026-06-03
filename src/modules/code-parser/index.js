@@ -7,7 +7,7 @@ import {
 } from "./utils/fileUtils.js";
 import { parseByType } from "./parsers/parserFactory.js";
 import { ParserError } from "./errors/parserError.js";
-export {saveFile} from "./utils/fileUtils.js"
+export { saveFile } from "./utils/fileUtils.js";
 
 //npm install --save-dev @babel/parser
 export class CodeParser {
@@ -38,14 +38,16 @@ export class CodeParser {
     const fileType = getFileType(filePath);
     try {
       const parsed = parseByType(fileType, fileContent);
+      const { imports, exports, classes, routes, functions, ...rest } = parsed;
       return {
         filePath,
         type: fileType,
-        imports: parsed.imports,
-        exports: parsed.exports,
-        classes: parsed.classes,
-        routes: parsed.routes,
-        functions: parsed.functions,
+        imports,
+        exports,
+        classes,
+        routes,
+        functions,
+        ...rest,
       };
     } catch (error) {
       throw new ParserError(filePath, error.message, fileType);
