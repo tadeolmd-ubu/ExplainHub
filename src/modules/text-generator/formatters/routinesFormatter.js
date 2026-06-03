@@ -21,7 +21,10 @@ function fmtRoutines(file) {
   if (funcs.length) {
     parts.push(
       ...funcs.map((fn) => {
-        const params = fn.params.map((p) => `${p.mode} ${p.name} ${p.type}`).join(", ");
+        const params = (fn.params || [])
+          .filter(Boolean)
+          .map((p) => `${p.mode || "IN"} ${p.name || "?"} ${p.type || "?"}`)
+          .join(", ");
         return `FUNCTION ${fn.name}(${params}) ${fn.returnType ? `→ ${fn.returnType}` : ""}`;
       }),
     );
@@ -30,7 +33,10 @@ function fmtRoutines(file) {
   if (procs.length) {
     parts.push(
       ...procs.map((p) => {
-        const params = p.params.map((pm) => `${pm.mode} ${pm.name} ${pm.type}`).join(", ");
+        const params = (p.params || [])
+          .filter(Boolean)
+          .map((pm) => `${pm.mode || "IN"} ${pm.name || "?"} ${pm.type || "?"}`)
+          .join(", ");
         return `PROCEDURE ${p.name}(${params})`;
       }),
     );

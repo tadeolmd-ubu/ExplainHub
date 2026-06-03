@@ -24,10 +24,16 @@ function extractCreateView(node) {
       return;
     }
     if (node.type === "create" && node.keyword === "view") {
-      return {
-        name: Array.isArray(node.table)
+      let name = null;
+      if (node.table) {
+        name = Array.isArray(node.table)
           ? node.table[0].table
-          : node.table.table,
+          : node.table.table;
+      } else if (node.name && node.name[0] && node.name[0].table) {
+        name = node.name[0].table;
+      }
+      return {
+        name,
         select: node.query_expr,
       };
     }

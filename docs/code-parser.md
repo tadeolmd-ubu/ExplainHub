@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, and CSS files using `@babel/parser` AST and regex-based parsers, extracting structural information: imports, exports, functions, classes, and HTTP routes.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, and **SQL** files using `@babel/parser` AST, regex-based parsers, and `node-sql-parser` for SQL, extracting structural information: imports, exports, functions, classes, HTTP routes, and database schema objects.
 
 **Location:** `src/modules/code-parser/`
 
@@ -27,7 +27,13 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, and CSS files using
 | `extractors/functionExtractor.js` | Extracts function declarations, methods, arrows |
 | `extractors/classExtractor.js` | Extracts class declarations with methods |
 | `extractors/routesExtractor.js` | Extracts Express-style route definitions |
-| `utils/fileUtils.js` | Tree traversal, file reading, type detection |
+| `parsers/sqlParser.js` | SQL parser using `node-sql-parser` + regex fallback |
+| `extractors/alterExtractor.js` | Extracts ALTER TABLE operations |
+| `extractors/commentExtractor.js` | Extracts SQL comments |
+| `extractors/createOtherExtractor.js` | Extracts CREATE VIEW/INDEX/FUNCTION/PROCEDURE/TRIGGER |
+| `extractors/createTableExtractor.js` | Extracts CREATE TABLE columns and constraints |
+| `extractors/dmlExtractor.js` | Extracts INSERT/UPDATE/DELETE/SELECT |
+| `extractors/dropExtractor.js` | Extracts DROP statements |
 
 ---
 
@@ -82,6 +88,61 @@ Regex-based. Extracts:
 - `@keyframes` as exports
 - `--variables` as functions
 - `@import` as imports
+
+### SQL Parser (`sqlParser.js`)
+
+Parses SQL files using `node-sql-parser` (`Parser.astify()`) with dialect detection and regex-based fallback for statements the AST parser cannot handle.
+
+**Dialect detection** (`detectDialect`):
+- **transactsql**: bracket identifiers `[name]`, `TOP`, `IDENTITY`, `OUTPUT`, `GO`
+- **mysql**: backtick identifiers `` `name` ``, `AUTO_INCREMENT`
+- **postgresql**: `SERIAL`, `::` casts, `PLPGSQL`
+
+**Parsing flow:**
+1. Detect dialect from content
+2. For **transactsql**: split by `GO` → per batch try `astify`(transactsql) → try `astify`(mysql) → split into individual statements → `astify`(mysql) per statement → regex fallback
+3. For **mysql/postgresql**: global `astify` → regex fallback
+
+**Extracted objects:**
+
+| Type | Properties | Source |
+|------|-----------|--------|
+| Tables | `name, columns[], foreignKeys[], primaryKey[]` | AST or regex |
+| Views | `name, select` | AST or regex |
+| Indexes | `name, table, columns[], type, using` | Regex |
+| Functions | `name, params[], returnType` | AST + regex params |
+| Procedures | `name, params[]` | AST + regex params |
+| Triggers | `name, timing, event, table` | Regex |
+| DML | `table, columns, values` (insert), `table, set` (update), `from, where` (delete/select) | AST |
+| ALTER | `table, operations[]` | AST or regex |
+| DROP | `keyword, name` | Regex |
+
+**Column extraction from CREATE TABLE (fallback):**
+When AST parsing fails (e.g. SQL Server types `VARCHAR(MAX)`, `DATETIME2`), a balanced-parenthesis parser extracts the table body and splits column definitions by comma (respecting nested parens). Each column yields `{ name, type, nullable }`.
+
+**Parameter extraction from CREATE FUNCTION/PROCEDURE (fallback):**
+- **MySQL/PostgreSQL style**: parenthesized list `(param1 TYPE, param2 TYPE)`
+- **SQL Server style**: flat list after name before `AS`/`BEGIN` `@param1 TYPE, @param2 TYPE`
+- Each parameter yields `{ mode, name, type }` (mode defaults to `"IN"`)
+
+**Return value** (added to the file result):
+```javascript
+{
+  tables:        [{ name, columns, foreignKeys, primaryKey, uniqueConstraints, check, indexes }],
+  views:         [{ name, select }],
+  indexes:       [{ name, table, columns, type, using }],
+  storedProcedures: [{ name, params }],
+  triggers:      [{ name, timing, event, table }],
+  databases:     [{ name }],
+  inserts:       [{ table, columns, values }],
+  updates:       [{ table, set }],
+  deletes:       [{ from, where }],
+  selects:       [{ columns, from, joins, where, ... }],
+  alterTables:   [{ table, operations }],
+  drops:         [{ keyword, name }],
+  comments:      [{ line, content, type }]
+}
+```
 
 ---
 
@@ -139,6 +200,7 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.ts`, `.tsx` | `typescript` | Yes |
 | `.html` | `markup` | Yes |
 | `.css` | `stylesheet` | Yes |
+| `.sql` | `sql` | Yes |
 | `.json` | `data` | No |
 
 ---
@@ -169,18 +231,19 @@ CodeParser.parse(tree, projectPath)
     +-- for each file:
         +-- isParseable()?  skip non-code files
         +-- readFile(filePath)
-        +-- getFileType(filePath)  →  "javascript"
+        +-- getFileType(filePath)  →  "javascript" | "sql"
         +-- parseByType(type, content)
             +-- jsParser: @babel/parser → AST
             +-- tsParser: @babel/parser → AST
             +-- htmlParser: regex-based
             +-- cssParser: regex-based
+            +-- sqlParser: node-sql-parser → AST + regex fallback
             +-- extractImports(ast)
             +-- extractExports(ast)
             +-- extractFunctions(ast)
             +-- extractClasses(ast)
             +-- extractRoutes(ast)
-        +-- return { filePath, type, imports, exports, functions, classes, routes }
+        +-- return { filePath, type, imports, exports, functions, classes, routes, tables, views, ... }
 ```
 
 ---
@@ -190,6 +253,7 @@ CodeParser.parse(tree, projectPath)
 | Import | Source | Purpose |
 |--------|--------|---------|
 | `@babel/parser` | npm | JavaScript/TypeScript AST parsing |
+| `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `fs` | `node:fs/promises` | File reading |
 | `path` | `node:path` | Path manipulation |
 
@@ -218,4 +282,5 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, and CSS out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, and SQL out of the box.
+- **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
