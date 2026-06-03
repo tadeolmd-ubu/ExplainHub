@@ -24,6 +24,7 @@ const parseableTypes = new Set([
   "typescript",
   "markup",
   "stylesheet",
+  "sql",
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);
