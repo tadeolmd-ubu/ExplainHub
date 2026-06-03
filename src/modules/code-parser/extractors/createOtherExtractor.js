@@ -65,12 +65,13 @@ function extractCreateFunction(node, sqlContent) {
     if (!(node.type === "create" && node.keyword === "function")) return null;
 
     const regex =
-      /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:`?\w+`?\.)?`?(\w+)`?\s*\(([^)]*)\)\s*RETURNS\s+(\w+)/i;
+      /CREATE\s+(?:OR\s+(?:REPLACE|ALTER)\s+)?FUNCTION\s+(?:(?:`?|\[?)\w+(?:`?|\]?)\.)?(?:`?|\[?)(\w+)(?:`?|\]?)\s*\(([^)]*)\)\s*RETURNS\s+(@?\w+(?:\s+TABLE)?)/i;
     const match = sqlContent.match(regex);
     if (!match) return null;
 
     const params = [];
-    const paramRegex = /\s*(IN|OUT|INOUT)?\s*`?(\w+)`?\s+(\w+(?:\([^)]*\))?)/g;
+    const paramRegex =
+      /\s*(IN|OUT|INOUT)?\s*(?:`?|\[?)(@?\w+)(?:`?|\]?)\s+(\w+(?:\([^)]*\))?)/g;
     let paramMatch;
     while ((paramMatch = paramRegex.exec(match[2])) !== null) {
       params.push({
@@ -96,12 +97,13 @@ function extractCreateProcedure(node, sqlContent) {
     if (!(node.type === "create" && node.keyword === "procedure")) return null;
 
     const regex =
-      /CREATE\s+(?:OR\s+REPLACE\s+)?PROCEDURE\s+(?:`?\w+`?\.)?`?(\w+)`?\s*\(([^)]*)\)/i;
+      /CREATE\s+(?:OR\s+(?:REPLACE|ALTER)\s+)?PROCEDURE\s+(?:(?:`?|\[?)\w+(?:`?|\]?)\.)?(?:`?|\[?)(\w+)(?:`?|\]?)\s*(?:\(([^)]*)\))?/i;
     const match = sqlContent.match(regex);
     if (!match) return null;
 
     const params = [];
-    const paramRegex = /\s*(IN|OUT|INOUT)?\s*`?(\w+)`?\s+(\w+(?:\([^)]*\))?)/g;
+    const paramRegex =
+      /\s*(IN|OUT|INOUT)?\s*(?:`?|\[?)(@?\w+)(?:`?|\]?)\s+(\w+(?:\([^)]*\))?)/g;
     let pm;
     while ((pm = paramRegex.exec(match[2])) !== null) {
       params.push({
@@ -127,7 +129,7 @@ function extractCreateTrigger(node, sqlContent) {
     if (!(node.type === "create" && node.keyword === "trigger")) return null;
 
     const regex =
-      /CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\s+(?:`?\w+`?\.)?`?(\w+)`?\s*(BEFORE|AFTER)\s+(INSERT|UPDATE|DELETE)\s+ON\s+`?(\w+)`?/i;
+      /CREATE\s+(?:OR\s+(?:REPLACE|ALTER)\s+)?TRIGGER\s+(?:(?:`?|\[?)\w+(?:`?|\]?)\.)?(?:`?|\[?)(\w+)(?:`?|\]?)\s*(BEFORE|AFTER|FOR)\s+(INSERT|UPDATE|DELETE)\s+ON\s+(?:`?|\[?)(\w+)(?:`?|\]?)/i;
     const match = sqlContent.match(regex);
     if (!match) return null;
 

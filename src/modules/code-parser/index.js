@@ -21,7 +21,7 @@ export class CodeParser {
 
     for (const file of files) {
       if (isParseable(file)) {
-        try {
+        try { 
           const filePath = path.join(projectPath, file);
           const result = await this.#processFile(filePath);
           results.push(result);
