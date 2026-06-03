@@ -18,6 +18,15 @@ The `TextGenerator` module transforms structured analysis data (from `StructureE
 | `formatters/fileFormatter.js` | Per-file breakdown section |
 | `formatters/apiFormatter.js` | API endpoints table |
 | `formatters/dependencyFormatter.js` | Dependency map section |
+| `formatters/tablesFormatter.js` | SQL tables section |
+| `formatters/viewsFormatter.js` | SQL views section |
+| `formatters/indexesFormatter.js` | SQL indexes section |
+| `formatters/routinesFormatter.js` | SQL functions & procedures section |
+| `formatters/triggersFormatter.js` | SQL triggers section |
+| `formatters/dmlFormatter.js` | SQL DML (INSERT/UPDATE/DELETE/SELECT) section |
+| `formatters/dropsFormatter.js` | SQL DROP statements section |
+| `formatters/commentsFormatter.js` | SQL comments section |
+| `formatters/alterFormatter.js` | SQL ALTER TABLE section |
 
 ---
 
@@ -92,6 +101,33 @@ src/server.js
   imports: express, path, ./routes
 ```
 
+### SQL Formatters
+
+Nine formatters handle database schema objects extracted by the SQL parser. Each returns `null` if no data is present.
+
+| Formatter | Section header | Content |
+|-----------|---------------|---------|
+| `tablesFormatter` | `TABLES` | Table name, columns (type, nullable), foreign keys |
+| `viewsFormatter` | `VIEWS` | View name |
+| `indexesFormatter` | `INDEXES` | Index name, table |
+| `routinesFormatter` | `ROUTINES` | Function/procedure name, params (mode name type), return type |
+| `triggersFormatter` | `TRIGGERS` | Trigger name, timing, event, table |
+| `dmlFormatter` | `DML` | INSERT/UPDATE/DELETE/SELECT per table |
+| `dropsFormatter` | `DROPS` | Drop target type and name |
+| `commentsFormatter` | `COMMENTS` | Comment content, line number, type |
+| `alterFormatter` | `ALTER TABLES` | Table, operation type, constraint name |
+
+Example output:
+```
+TABLES
+======
+db/schema.sql
+  usuarios (5 cols)
+    - id SERIAL (nullable: false)
+    - email VARCHAR(200) (nullable: false)
+  Foreign keys: posts.idUsuario → usuarios.id
+```
+
 ---
 
 ## Flow
@@ -104,6 +140,15 @@ TextGenerator.generate({ technologies, entryPoints, files })
     +-- files.map(fileFormatter)                          → string[]
     +-- apiFormatter(files)                               → string | null
     +-- dependencyFormatter(files)                        → string
+    +-- tablesFormatter(files)                            → string | null
+    +-- viewsFormatter(files)                             → string | null
+    +-- indexesFormatter(files)                           → string | null
+    +-- routinesFormatter(files)                          → string | null
+    +-- triggersFormatter(files)                          → string | null
+    +-- dmlFormatter(files)                               → string | null
+    +-- dropsFormatter(files)                             → string | null
+    +-- commentsFormatter(files)                          → string | null
+    +-- alterFormatter(files)                             → string | null
     |
     +-- filter(Boolean)  → remove null sections
     +-- join("\n\n")     → separate sections with blank lines
@@ -145,3 +190,4 @@ console.log(output);
 - **Optional sections:** Formatters return `null` when no data is available; the orchestrator filters them.
 - **Plain text format:** Uses `==` and `--` delimiters for sections — easy for both humans and LLMs to parse.
 - **No coupling:** Formatters receive plain data and return strings. They don't know about `CodeParser`, `StructureExtractor`, or each other.
+- **SQL coverage:** 9 SQL formatters match the 9 object types extracted by the SQL parser — every parsed database object appears in the output.

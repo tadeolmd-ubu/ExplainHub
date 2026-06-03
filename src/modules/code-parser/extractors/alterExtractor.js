@@ -32,6 +32,17 @@ export function extractAlter(node) {
                 };
 
               case "constraint":
+                if (
+                  op.create_definitions?.constraint_type?.toLowerCase() ===
+                  "default"
+                ) {
+                  return {
+                    ...base,
+                    constraint: op.create_definitions?.constraint,
+                    column: op.create_definitions?.column?.column,
+                    default_val: op.create_definitions?.default_val,
+                  };
+                }
                 return {
                   ...base,
                   constraint: op.create_definitions?.constraint,
@@ -50,6 +61,14 @@ export function extractAlter(node) {
                           ),
                       }
                     : null,
+                };
+
+              case "default":
+                return {
+                  ...base,
+                  constraint: op.constraint,
+                  column: op.column?.column,
+                  default_val: op.default_val,
                 };
 
               default:
