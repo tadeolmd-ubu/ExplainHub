@@ -8,6 +8,9 @@ import {
   validateRepositorySize,
 } from "../../modules/security/index.js";
 
+import fs from "node:fs/promises";
+import path from "node:path";
+
 export class AnalyzerService {
   async analyze(input, format = "txt") {
     let projectPath = input;
@@ -33,6 +36,20 @@ export class AnalyzerService {
     const parser = new CodeParser();
     const files = await parser.parse(tree, projectPath);
     const generator = new TextGenerator();
+
+    if (format === "md") {
+      if (result) {
+        return {
+          summary: "Markdown docs only supported for local paths, not remote repos",
+        };
+      }
+      const { readme, modules } = generator.generate({
+        technologies, entryPoints, files, tree, projectPath, format: "md",
+      });
+      const written = await writeDocs({ projectPath, readme, modules });
+      return { summary: `Documentation generated: ${written} files` };
+    }
+
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
@@ -45,4 +62,14 @@ export class AnalyzerService {
       if (result) await cloner.cleanup(result.tempPath);
     }
   }
+}
+
+async function writeDocs({ projectPath, readme, modules }) {
+  const docsDir = path.join(projectPath, "docs");
+  await fs.mkdir(docsDir, { recursive: true });
+  await fs.writeFile(path.join(projectPath, "README.md"), readme);
+  for (const mod of modules) {
+    await fs.writeFile(path.join(docsDir, `${mod.name}.md`), mod.content);
+  }
+  return modules.length + 1;
 }

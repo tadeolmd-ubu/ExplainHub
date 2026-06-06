@@ -14,14 +14,14 @@ import { dropsFormatter } from "./formatters/txt/dropsFormatter.js";
 import { commentsFormatter } from "./formatters/txt/commentsFormatter.js";
 
 import {readmeFormatter} from "./formatters/md/readme.js"
-import { moduleFormatter } from "./formatters/md/module.js"
+import { moduleFormatter } from "./formatters/md/modules.js"
 import path from "node:path";
 
 
 export class TextGenerator {
   generate({ technologies, entryPoints, files, tree, projectPath, format = "txt" }) {
     if(format === "md"){
-      return this.generateMarkdown({ tree, technologies, entryPoints, files, projectPath })
+      return this.#generateMarkdown({ tree, technologies, entryPoints, files, projectPath })
     }
     const sections = [
       headerFormatter({ technologies, entryPoints }),
