@@ -41,22 +41,4 @@ export class TextGenerator {
     ];
     return sections.filter(Boolean).join("\n\n");
   }
-   #generateMarkdown({ technologies, entryPoints, files, tree, projectPath }) {
-    const readme = readmeFormatter({ technologies, entryPoints, files, tree, projectPath });
-    const modules = buildModules({ files, projectPath });
-    return { readme, modules };
-  }
-}
-function buildModules({ files, projectPath }) {
-  const dirs = {};
-  for (const file of files) {
-    const dir = path.dirname(file.filePath);
-    if (!dirs[dir]) dirs[dir] = [];
-    dirs[dir].push(file);
-  }
-  return Object.entries(dirs).map(([dirPath, dirFiles]) => {
-    const name = path.basename(dirPath);
-    const content = moduleFormatter({ name, files: dirFiles });
-    return { name, content };
-  });
 }
