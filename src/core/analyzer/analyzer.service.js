@@ -8,6 +8,10 @@ import {
   validateRepositorySize,
 } from "../../modules/security/index.js";
 
+import fs from "node:fs/promises";
+import path from "node:path";
+import { config } from "../../config/env.js";
+
 export class AnalyzerService {
   async analyze(input, format = "txt") {
     let projectPath = input;
@@ -33,6 +37,51 @@ export class AnalyzerService {
     const parser = new CodeParser();
     const files = await parser.parse(tree, projectPath);
     const generator = new TextGenerator();
+
+    if (format === "md") {
+      if (result)
+        return {
+          summary:
+            "Markdown docs only supported for local paths, not remote repos",
+        };
+
+      const { readme, modules } = generator.generate({
+        technologies,
+        entryPoints,
+        files,
+        tree,
+        projectPath,
+        format: "md",
+      });
+
+      let finalReadme = readme;
+      let finalModules = modules;
+
+      if (config.ollama.model) {
+        const enhancer = new AiEnhancer();
+
+        console.log("Mejorando README con IA...");
+        finalReadme = await enhancer.enhanceMarkdown(readme);
+
+        console.log(
+          `Mejorando ${modules.length} módulos con IA, uno a la vez...`,
+        );
+        finalModules = [];
+
+        for (const mod of modules) {
+          console.log(`  Mejorando ${mod.name}...`);
+          const content = await enhancer.enhanceMarkdown(mod.content);
+          finalModules.push({ ...mod, content });
+        }
+      }
+      const written = await writeDocs({
+        projectPath,
+        readme: finalReadme,
+        modules: finalModules,
+      });
+      return { summary: `Document generated: ${written} files` };
+    }
+
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
@@ -45,4 +94,14 @@ export class AnalyzerService {
       if (result) await cloner.cleanup(result.tempPath);
     }
   }
+}
+
+async function writeDocs({ projectPath, readme, modules }) {
+  const docsDir = path.join(projectPath, "docs");
+  await fs.mkdir(docsDir, { recursive: true });
+  await fs.writeFile(path.join(projectPath, "README.md"), readme);
+  for (const mod of modules) {
+    await fs.writeFile(path.join(docsDir, `${mod.name}.md`), mod.content);
+  }
+  return modules.length + 1;
 }
