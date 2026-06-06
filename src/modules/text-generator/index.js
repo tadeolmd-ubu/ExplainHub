@@ -13,8 +13,16 @@ import { dmlFormatter } from "./formatters/txt/dmlFormatter.js";
 import { dropsFormatter } from "./formatters/txt/dropsFormatter.js";
 import { commentsFormatter } from "./formatters/txt/commentsFormatter.js";
 
+import {readmeFormatter} from "./formatters/md/readme.js"
+import { moduleFormatter } from "./formatters/md/module.js"
+import path from "node:path";
+
+
 export class TextGenerator {
-  generate({ technologies, entryPoints, files }) {
+  generate({ technologies, entryPoints, files, tree, projectPath, format = "txt" }) {
+    if(format === "md"){
+      return this.generateMarkdown({ tree, technologies, entryPoints, files, projectPath })
+    }
     const sections = [
       headerFormatter({ technologies, entryPoints }),
       statsFormatter(files),
@@ -33,4 +41,22 @@ export class TextGenerator {
     ];
     return sections.filter(Boolean).join("\n\n");
   }
+   #generateMarkdown({ technologies, entryPoints, files, tree, projectPath }) {
+    const readme = readmeFormatter({ technologies, entryPoints, files, tree, projectPath });
+    const modules = buildModules({ files, projectPath });
+    return { readme, modules };
+  }
+}
+function buildModules({ files, projectPath }) {
+  const dirs = {};
+  for (const file of files) {
+    const dir = path.dirname(file.filePath);
+    if (!dirs[dir]) dirs[dir] = [];
+    dirs[dir].push(file);
+  }
+  return Object.entries(dirs).map(([dirPath, dirFiles]) => {
+    const name = path.basename(dirPath);
+    const content = moduleFormatter({ name, files: dirFiles });
+    return { name, content };
+  });
 }
