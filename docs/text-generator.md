@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `TextGenerator` module transforms structured analysis data (from `StructureExtractor` + `CodeParser`) into a human-readable plain text document. This text is designed to be consumed by an AI for further enhancement.
+The `TextGenerator` module transforms structured analysis data (from `StructureExtractor` + `CodeParser`) into a human-readable document. It supports two output formats: plain text for AI consumption, and Markdown for generating project documentation.
 
 **Location:** `src/modules/text-generator/`
 
@@ -13,35 +13,48 @@ The `TextGenerator` module transforms structured analysis data (from `StructureE
 | File | Purpose |
 |------|---------|
 | `index.js` | Orchestrator `TextGenerator` class |
-| `formatters/headerFormatter.js` | Project overview section |
-| `formatters/statsFormatter.js` | Global statistics section |
-| `formatters/fileFormatter.js` | Per-file breakdown section |
-| `formatters/apiFormatter.js` | API endpoints table |
-| `formatters/dependencyFormatter.js` | Dependency map section |
-| `formatters/tablesFormatter.js` | SQL tables section |
-| `formatters/viewsFormatter.js` | SQL views section |
-| `formatters/indexesFormatter.js` | SQL indexes section |
-| `formatters/routinesFormatter.js` | SQL functions & procedures section |
-| `formatters/triggersFormatter.js` | SQL triggers section |
-| `formatters/dmlFormatter.js` | SQL DML (INSERT/UPDATE/DELETE/SELECT) section |
-| `formatters/dropsFormatter.js` | SQL DROP statements section |
-| `formatters/commentsFormatter.js` | SQL comments section |
-| `formatters/alterFormatter.js` | SQL ALTER TABLE section |
+| `formatters/txt/headerFormatter.js` | Project overview section (txt) |
+| `formatters/txt/statsFormatter.js` | Global statistics section (txt) |
+| `formatters/txt/fileFormatter.js` | Per-file breakdown section (txt) |
+| `formatters/txt/apiFormatter.js` | API endpoints table (txt) |
+| `formatters/txt/dependencyFormatter.js` | Dependency map section (txt) |
+| `formatters/txt/tablesFormatter.js` | SQL tables section (txt) |
+| `formatters/txt/viewsFormatter.js` | SQL views section (txt) |
+| `formatters/txt/indexesFormatter.js` | SQL indexes section (txt) |
+| `formatters/txt/routinesFormatter.js` | SQL functions & procedures section (txt) |
+| `formatters/txt/triggersFormatter.js` | SQL triggers section (txt) |
+| `formatters/txt/dmlFormatter.js` | SQL DML section (txt) |
+| `formatters/txt/dropsFormatter.js` | SQL DROP statements section (txt) |
+| `formatters/txt/commentsFormatter.js` | SQL comments section (txt) |
+| `formatters/txt/alterFormatter.js` | SQL ALTER TABLE section (txt) |
+| `formatters/md/readme.js` | README.md markdown generator |
+| `formatters/md/modules.js` | Module-level markdown generator |
 
 ---
 
 ## Class: `TextGenerator`
 
-### `generate({ technologies, entryPoints, files })`
+### `generate({ technologies, entryPoints, files, tree, projectPath, format })`
 
-Composes all formatter outputs into a single plain text document.
+Composes all formatter outputs into a document.
 
 **Parameters:**
 - `technologies` (string[]) - Detected technologies from `StructureExtractor`
 - `entryPoints` (object) - Entry points per technology
 - `files` (FileResult[]) - Parsed file data from `CodeParser`
+- `tree` (object) - Directory tree from `StructureExtractor` (required for `md` format)
+- `projectPath` (string) - Project root path (required for `md` format)
+- `format` (string) - `"txt"` (default) or `"md"` — selects output path
 
-**Returns:** `string` - Plain text document with sections separated by blank lines.
+**Returns:**
+- For `"txt"`: `string` - Plain text document with sections separated by blank lines
+- For `"md"`:
+```javascript
+{
+  readme: string,                    // README.md content
+  modules: [{ name: string, content: string }]  // docs/<module>.md content per directory
+}
+```
 
 ---
 
@@ -128,31 +141,69 @@ db/schema.sql
   Foreign keys: posts.idUsuario → usuarios.id
 ```
 
+### Markdown Formatters (`formatters/md/`)
+
+Two formatters produce the markdown output for the `"md"` format:
+
+**`readme.js`** — Generates `README.md` with sections:
+- `# ` Project name (from `package.json`)
+- `## Overview` — Technologies and entry points
+- `## Project Structure` — ASCII directory tree (from `tree`)
+- `## Modules` — Table with links to `docs/<module>.md`
+- `## API Endpoints` — Route table (if routes exist)
+- `## Database Schema` — SQL objects table (if any exist)
+
+**`modules.js`** — Called once per directory with parseable files. Generates `docs/<module>.md` with:
+- `# Module: ` name and file path
+- `## File Structure` — Table of files with descriptions
+- `## Functions` — Table (name, kind, async, file)
+- `## Classes` — Table (name, extends, file)
+- `## Exports` — Table (name, kind, file)
+- `## Routes` — Table (method, path, file)
+- `## SQL Objects` — Tables, views, and indexes
+
 ---
 
 ## Flow
 
 ```
-TextGenerator.generate({ technologies, entryPoints, files })
+TextGenerator.generate({ technologies, entryPoints, files, tree, projectPath, format })
     |
-    +-- headerFormatter({ technologies, entryPoints })    → string
-    +-- statsFormatter(files)                             → string
-    +-- files.map(fileFormatter)                          → string[]
-    +-- apiFormatter(files)                               → string | null
-    +-- dependencyFormatter(files)                        → string
-    +-- tablesFormatter(files)                            → string | null
-    +-- viewsFormatter(files)                             → string | null
-    +-- indexesFormatter(files)                           → string | null
-    +-- routinesFormatter(files)                          → string | null
-    +-- triggersFormatter(files)                          → string | null
-    +-- dmlFormatter(files)                               → string | null
-    +-- dropsFormatter(files)                             → string | null
-    +-- commentsFormatter(files)                          → string | null
-    +-- alterFormatter(files)                             → string | null
-    |
-    +-- filter(Boolean)  → remove null sections
-    +-- join("\n\n")     → separate sections with blank lines
-    +-- return plain text
+    +-- format === "md" ?
+         |
+     ┌───┴───┐
+     ▼       ▼
+    Yes      No
+     |       |
+     |       ▼
+     |   headerFormatter({ technologies, entryPoints })    → string
+     |   statsFormatter(files)                             → string
+     |   files.map(fileFormatter)                          → string[]
+     |   apiFormatter(files)                               → string | null
+     |   dependencyFormatter(files)                        → string
+     |   tablesFormatter(files)                            → string | null
+     |   viewsFormatter(files)                             → string | null
+     |   indexesFormatter(files)                           → string | null
+     |   routinesFormatter(files)                          → string | null
+     |   triggersFormatter(files)                          → string | null
+     |   dmlFormatter(files)                               → string | null
+     |   dropsFormatter(files)                             → string | null
+     |   commentsFormatter(files)                          → string | null
+     |   alterFormatter(files)                             → string | null
+     |   filter(Boolean) → join("\n\n") → return string
+     |
+     ▼
+  #generateMarkdown()
+     |
+     +-- readmeFormatter({ technologies, entryPoints, files, tree, projectPath })
+     |       → "# Project...\n\n## Overview..."
+     |
+     +-- buildModules({ files })
+     |       → groups files by directory
+     |       → moduleFormatter({ name, files }) per group
+     |       → [{ name: "code-parser", content: "# Module: ..." }, ...]
+     |
+     +-- return { readme, modules[] }
 ```
 
 ---
@@ -177,9 +228,14 @@ const parser = new CodeParser();
 const files = await parser.parse(tree, "/path/to/project");
 
 const generator = new TextGenerator();
-const output = generator.generate({ technologies, entryPoints, files });
 
-console.log(output);
+// Plain text output (for AI consumption):
+const txt = generator.generate({ technologies, entryPoints, files });
+
+// Markdown output (for project docs):
+const { readme, modules } = generator.generate({
+  technologies, entryPoints, files, tree, projectPath: "/path/to/project", format: "md"
+});
 ```
 
 ---
@@ -191,3 +247,6 @@ console.log(output);
 - **Plain text format:** Uses `==` and `--` delimiters for sections — easy for both humans and LLMs to parse.
 - **No coupling:** Formatters receive plain data and return strings. They don't know about `CodeParser`, `StructureExtractor`, or each other.
 - **SQL coverage:** 9 SQL formatters match the 9 object types extracted by the SQL parser — every parsed database object appears in the output.
+- **Dual output format:** Supports `txt` (flat plain text for AI) and `md` (structured markdown for project docs).
+- **Markdown uses the same data pipeline:** Reuses the same `files[]` array; only the formatters differ between txt and md.
+- **Module grouping:** `buildModules()` groups `files[]` by directory; each directory with parseable files becomes a `docs/<module>.md`.

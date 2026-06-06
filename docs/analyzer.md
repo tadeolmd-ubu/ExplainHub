@@ -30,10 +30,7 @@ Runs the complete analysis pipeline.
 **Returns:**
 ```javascript
 {
-  summary: string,       // AI-enhanced narrative in txt or md (or plain text fallback)
-  plainText: string,     // Raw TextGenerator output
-  technologies: string[],
-  files: FileResult[]
+  summary: string,       // AI-enhanced narrative in txt, or "Document generated: N files" for md
 }
 ```
 
@@ -49,15 +46,22 @@ Runs the complete analysis pipeline.
 
 4. **CodeParser.parse(tree, projectPath)** → `files[]`
 
-5. **TextGenerator.generate({ technologies, entryPoints, files })** → `plainText`
+5. **Two output paths:**
 
-6. **AiEnhancer.enhance(plainText, format)** → `summary` (txt or md)
+   **`format === "txt"`** (default):
+   - `TextGenerator.generate({ technologies, entryPoints, files })` → `plainText`
+   - `AiEnhancer.enhance(plainText, format)` → `summary` (txt or md)
+   - If AI enhancement fails, plain text is returned as the summary.
+   - CLI shows result and optionally saves to a `.txt`/`.md` file.
 
-7. **Auto-cleanup**: If the repo was cloned, `cloner.cleanup()` removes the temp directory.
+   **`format === "md"`**:
+   - Only works with local paths (remote repos return an error message)
+   - `TextGenerator.generate({ technologies, entryPoints, files, tree, projectPath, format: "md" })` → `{ readme, modules[] }`
+   - If `OLLAMA_MODEL` is configured: `enhancer.enhanceMarkdown()` improves README and each module doc via AI
+   - `writeDocs()` writes `README.md` and `docs/<module>.md` to the project directory
+   - CLI skips the save prompt (docs are already on disk)
 
-If AI enhancement fails, the plain text is returned as the summary.
-
-The CLI also offers saving the result to a .txt or .md file after displaying it.
+6. **Auto-cleanup**: If the repo was cloned, `cloner.cleanup()` removes the temp directory. (Not applicable for md format, which rejects remote repos.)
 
 ---
 
@@ -96,8 +100,9 @@ Select "Url en la nube", "Ruta en los archivos", or ".zip" and follow the prompt
 | RepositoryCloner | `../modules/cloner/` | Git clone |
 | StructureExtractor | `../modules/structure-extractor/` | File tree analysis |
 | CodeParser | `../modules/code-parser/` | Source code parsing |
-| TextGenerator | `../modules/text-generator/` | Plain text generation |
+| TextGenerator | `../modules/text-generator/` | Plain text / markdown generation |
 | AiEnhancer | `../modules/ai-enhancer/` | AI enhancement |
+| config | `../config/env.js` | Environment config (OLLAMA_MODEL, etc.) |
 | validatePath | `../modules/security/` | Path security validation |
 | validateRepositorySize | `../modules/security/` | Size limit validation |
 
@@ -127,14 +132,37 @@ CLI (explain)  or  POST /api/analyze { projectPath }
         CodeParser.parse(tree, projectPath) ──► files[]
                 |
                 ▼
-        TextGenerator.generate({ technologies, entryPoints, files }) ──► plainText
+        format === "md" ?
                 |
-                ▼
-        AiEnhancer.enhance(plainText, format) ──► summary (txt/md) or plainText fallback
-                |
-                ▼
-        CLI: show result → confirm save → saveFile(summary, path)
-        API: return { summary, plainText, technologies, files }
+         ┌──────┴──────┐
+         ▼              ▼
+        Yes             No
+         |              |
+         |              ▼
+         |       TextGenerator.generate()
+         |         (technologies, entryPoints, files)
+         |              |
+         |              ▼
+         |       AiEnhancer.enhance(plainText, format)
+         |              |
+         |              ▼
+         |       CLI: show result → confirm save
+         |
+         ▼
+  TextGenerator.generate()
+  (format: "md", with tree + projectPath)
+         |
+         ▼
+  { readme, modules[] }
+         |
+         +-- OLLAMA_MODEL set? ──Yes──► enhancer.enhanceMarkdown()
+         |                                   (readme + each module)
+         |
+         ▼
+  writeDocs(projectPath, readme, modules)
+         |
+         ▼
+  README.md + docs/<module>.md written to disk
 ```
 
 ---
@@ -142,6 +170,9 @@ CLI (explain)  or  POST /api/analyze { projectPath }
 ## Architecture Notes
 
 - **Orchestration pattern:** `AnalyzerService` coordinates all modules without knowing their internal implementation.
-- **Fallback on AI failure:** If Ollama is unavailable or returns an error, the plain text is used as the summary.
+- **Dual output paths:** `txt` format produces an AI-enhanced narrative (or plain text fallback). `md` format writes `README.md` + `docs/*.md` directly to the project.
+- **AI is optional for markdown:** If `OLLAMA_MODEL` is not set, markdown docs are generated from the deterministic formatters without AI calls.
+- **Fallback on AI failure:** For `txt` format, if Ollama is unavailable or returns an error, the plain text is used as the summary.
 - **Automatic cleanup:** Cloned repositories are always removed after processing, even if an error occurs.
 - **Dual input mode:** Accepts both remote URLs and local paths transparently.
+- **Remote repos incompatible with markdown:** Since docs are written to the project directory, `md` format only works with local paths.
