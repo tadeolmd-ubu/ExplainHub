@@ -10,6 +10,7 @@ import {
 
 import fs from "node:fs/promises";
 import path from "node:path";
+import { config } from "../../config/env.js";
 
 export class AnalyzerService {
   async analyze(input, format = "txt") {
@@ -38,16 +39,47 @@ export class AnalyzerService {
     const generator = new TextGenerator();
 
     if (format === "md") {
-      if (result) {
+      if (result)
         return {
-          summary: "Markdown docs only supported for local paths, not remote repos",
+          summary:
+            "Markdown docs only supported for local paths, not remote repos",
         };
-      }
+
       const { readme, modules } = generator.generate({
-        technologies, entryPoints, files, tree, projectPath, format: "md",
+        technologies,
+        entryPoints,
+        files,
+        tree,
+        projectPath,
+        format: "md",
       });
-      const written = await writeDocs({ projectPath, readme, modules });
-      return { summary: `Documentation generated: ${written} files` };
+
+      let finalReadme = readme;
+      let finalModules = modules;
+
+      if (config.ollama.model) {
+        const enhancer = new AiEnhancer();
+
+        console.log("Mejorando README con IA...");
+        finalReadme = await enhancer.enhanceMarkdown(readme);
+
+        console.log(
+          `Mejorando ${modules.length} módulos con IA, uno a la vez...`,
+        );
+        finalModules = [];
+
+        for (const mod of modules) {
+          console.log(`  Mejorando ${mod.name}...`);
+          const content = await enhancer.enhanceMarkdown(mod.content);
+          finalModules.push({ ...mod, content });
+        }
+      }
+      const written = await writeDocs({
+        projectPath,
+        readme: finalReadme,
+        modules: finalModules,
+      });
+      return { summary: `Document generated: ${written} files` };
     }
 
     const plainText = generator.generate({ technologies, entryPoints, files });

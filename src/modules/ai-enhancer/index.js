@@ -1,6 +1,7 @@
 import { Ollama } from "ollama";
 import { buildPromptTxt } from "./prompt/promptTxt.js";
 import { buildPromptMd } from "./prompt/promptMd.js";
+import { buildMdEnhancer } from "./prompt/promptMdEnhancer.js";
 function cleanMarkdown(text) {
   const lines = text
     .replace(/\*\*/g, "")
@@ -43,6 +44,20 @@ export class AiEnhancer {
     }
     const result = chunks.join("");
     return format === "md" ? result : cleanMarkdown(result);
+  }
+
+  async enhanceMarkdown(markdown) {
+    const prompt = buildMdEnhancer(markdown);
+    const stream = await this.ollama.generate({
+      model: this.model,
+      prompt,
+      stream: true,
+    });
+    const chunks = [];
+    for await (const part of stream) {
+      chunks.push(part.response);
+    }
+    return chunks.join("");
   }
 }
 
