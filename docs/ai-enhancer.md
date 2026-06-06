@@ -14,7 +14,8 @@ The `AiEnhancer` module takes the plain text output from `TextGenerator` and sen
 |------|---------|
 | `index.js` | Core `AiEnhancer` class |
 | `prompt/promptTxt.js` | Prompt template for plain text output |
-| `prompt/promptMd.js` | Prompt template for Markdown output |
+| `prompt/promptMd.js` | Prompt template for Markdown output (from plain text) |
+| `prompt/promptMdEnhancer.js` | Prompt template for improving existing Markdown |
 
 ---
 
@@ -36,6 +37,15 @@ Sends the plain text analysis to the LLM and returns the full response.
 
 **Returns:** `Promise<string>` - The complete AI-generated narrative report in txt or md.
 
+### `enhanceMarkdown(markdown)`
+
+Improves an existing Markdown document by sending it to the LLM with a polish prompt. Used by the `md` output format to enrich README.md and module docs.
+
+**Parameters:**
+- `markdown` (string) - Pre-generated Markdown content (from markdown formatters)
+
+**Returns:** `Promise<string>` - The improved Markdown with better wording and formatting.
+
 ### Response Cleaning
 
 Raw markdown from the LLM is cleaned:
@@ -49,13 +59,13 @@ Raw markdown from the LLM is cleaned:
 
 ## Prompt Templates
 
-There are two prompt files, chosen by the `format` parameter:
+There are three prompt files, chosen depending on the format and use case:
 
 **`promptTxt.js`** — instructs the model to return plain text with `----` separators.
 
 **`promptMd.js`** — instructs the model to return Markdown with `##` titles, **bold**, `code`, and tables.
 
-Both share the same structure but differ in the formatting instruction at the end.
+**`promptMdEnhancer.js`** — instructs the model to improve existing Markdown without inventing information. Used by `enhanceMarkdown()` to polish README.md and module docs.
 
 ---
 
@@ -69,6 +79,13 @@ AiEnhancer.enhance(plainText, format)
     +-- collect stream chunks
     +-- if txt: cleanMarkdown(raw)      → remove markdown artifacts
     +-- if md: return raw               → keep markdown
+
+AiEnhancer.enhanceMarkdown(markdown)
+    |
+    +-- buildMdEnhancer(markdown)       → prompt to polish existing md
+    +-- ollama.generate({ model, prompt, stream: true })
+    +-- collect stream chunks
+    +-- return raw                      → improved markdown
 ```
 
 ---
@@ -103,6 +120,7 @@ console.log(summary);
 - **Thin wrapper:** The class is minimal — it reads config from `.env`, builds the prompt, and delegates to Ollama.
 - **Streaming internally:** Collects Ollama's streaming response into a complete string before returning.
 - **Markdown cleanup:** Strips common markdown syntax for clean plain text output.
-- **Dual prompt templates:** `promptTxt.js` and `promptMd.js` let the user choose between plain text and Markdown output.
+- **Three prompt templates:** `promptTxt.js`, `promptMd.js`, and `promptMdEnhancer.js` for different enhancement scenarios.
 - **Markdown passthrough:** When using md format, `cleanMarkdown` is skipped to preserve the Markdown syntax.
+- **`enhanceMarkdown` passthrough:** Returns raw markdown output (no cleanup), since the input is already markdown.
 - **Model-agnostic:** Works with any Ollama-compatible model. Configure via `.env`.

@@ -1,20 +1,28 @@
-import { headerFormatter } from "./formatters/headerFormatter.js";
-import { statsFormatter } from "./formatters/statsFormatter.js";
-import { fileFormatter } from "./formatters/fileFormatter.js";
-import { apiFormatter } from "./formatters/apiFormatter.js";
-import { dependencyFormatter } from "./formatters/dependencyFormatter.js";
-import { alterFormatter } from "./formatters/alterFormatter.js";
-import { tablesFormatter } from "./formatters/tablesFormatter.js";
-import { viewsFormatter } from "./formatters/viewsFormatter.js";
-import { indexesFormatter } from "./formatters/indexesFormatter.js";
-import { routinesFormatter } from "./formatters/routinesFormatter.js";
-import { triggersFormatter } from "./formatters/triggersFormatter.js";
-import { dmlFormatter } from "./formatters/dmlFormatter.js";
-import { dropsFormatter } from "./formatters/dropsFormatter.js";
-import { commentsFormatter } from "./formatters/commentsFormatter.js";
+import { headerFormatter } from "./formatters/txt/headerFormatter.js";
+import { statsFormatter } from "./formatters/txt/statsFormatter.js";
+import { fileFormatter } from "./formatters/txt/fileFormatter.js";
+import { apiFormatter } from "./formatters/txt/apiFormatter.js";
+import { dependencyFormatter } from "./formatters/txt/dependencyFormatter.js";
+import { alterFormatter } from "./formatters/txt/alterFormatter.js";
+import { tablesFormatter } from "./formatters/txt/tablesFormatter.js";
+import { viewsFormatter } from "./formatters/txt/viewsFormatter.js";
+import { indexesFormatter } from "./formatters/txt/indexesFormatter.js";
+import { routinesFormatter } from "./formatters/txt/routinesFormatter.js";
+import { triggersFormatter } from "./formatters/txt/triggersFormatter.js";
+import { dmlFormatter } from "./formatters/txt/dmlFormatter.js";
+import { dropsFormatter } from "./formatters/txt/dropsFormatter.js";
+import { commentsFormatter } from "./formatters/txt/commentsFormatter.js";
+
+import {readmeFormatter} from "./formatters/md/readme.js"
+import { moduleFormatter } from "./formatters/md/modules.js"
+import path from "node:path";
+
 
 export class TextGenerator {
-  generate({ technologies, entryPoints, files }) {
+  generate({ technologies, entryPoints, files, tree, projectPath, format = "txt" }) {
+    if(format === "md"){
+      return this.#generateMarkdown({ tree, technologies, entryPoints, files, projectPath })
+    }
     const sections = [
       headerFormatter({ technologies, entryPoints }),
       statsFormatter(files),

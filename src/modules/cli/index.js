@@ -70,28 +70,30 @@ async function main() {
   c.outro("Análisis completado");
   console.log(result.summary);
 
-  const shouldSave = await c.confirm({
-    message: "¿Guardar el resultado en un archivo?",
-  });
-
-  if (c.isCancel(shouldSave)) {
-    c.outro("Cancelado");
-    process.exit(0);
-  }
-
-  if (shouldSave) {
-    const filePath = await c.text({
-      message: "Ruta del archivo",
-      placeholder: `./summary.${format}`,
+  if (format !== "md") {
+    const shouldSave = await c.confirm({
+      message: "¿Guardar el resultado en un archivo?",
     });
 
-    if (c.isCancel(filePath)) {
+    if (c.isCancel(shouldSave)) {
       c.outro("Cancelado");
       process.exit(0);
     }
 
-    await saveFile(result.summary, filePath);
-    c.outro(`Guardado en ${filePath}`);
+    if (shouldSave) {
+      const filePath = await c.text({
+        message: "Ruta del archivo",
+        placeholder: `./summary.${format}`,
+      });
+
+      if (c.isCancel(filePath)) {
+        c.outro("Cancelado");
+        process.exit(0);
+      }
+
+      await saveFile(result.summary, filePath);
+      c.outro(`Guardado en ${filePath}`);
+    }
   }
 }
 
