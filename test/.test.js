@@ -7,6 +7,8 @@ import { StructureExtractor } from "../src/modules/structure-extractor/index.js"
 import { CodeParser } from "../src/modules/code-parser/index.js";
 import { TextGenerator } from "../src/modules/text-generator/index.js";
 import { AiEnhancer } from "../src/modules/ai-enhancer/index.js";
+
+import { AnalyzerService } from "../src/core/analyzer/analyzer.service.js";
 //test("", async() =>{})
 
 //==========CLONER==========//
@@ -90,4 +92,12 @@ test("should return /docs with the modules of the app in format md", async () =>
   assert.ok(readme.length > 0);
   assert.ok(Array.isArray(modules));
   assert.ok(modules.length > 0);
+});
+
+test("Should return a txt and sumary string of the project", async () => {
+  const analyzer = new AnalyzerService();
+
+  const result = await analyzer.analyze(".", "txt");
+  assert.equal(typeof result.summary, "string");
+  assert.ok(result.summary.length > 0);
 });
