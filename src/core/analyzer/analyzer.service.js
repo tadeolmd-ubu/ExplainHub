@@ -61,8 +61,12 @@ export class AnalyzerService {
         const enhancer = new AiEnhancer();
 
         console.log("Mejorando README con IA...");
-        finalReadme = await enhancer.enhanceMarkdown(readme);
-
+        try {
+          finalReadme = await enhancer.enhanceMarkdown(readme);
+        } catch (err) {
+          console.error(`Error mejorando README: ${err.message}`);
+          finalReadme = readme;
+        }
         console.log(
           `Mejorando ${modules.length} módulos con IA, uno a la vez...`,
         );
@@ -70,8 +74,13 @@ export class AnalyzerService {
 
         for (const mod of modules) {
           console.log(`  Mejorando ${mod.name}...`);
-          const content = await enhancer.enhanceMarkdown(mod.content);
-          finalModules.push({ ...mod, content });
+          try {
+            const content = await enhancer.enhanceMarkdown(mod.content);
+            finalModules.push({ ...mod, content });
+          } catch (err) {
+            console.error(`  Error mejorando ${mod.name}: ${err.message}`);
+            finalModules.push({ ...mod, content: mod.content });
+          }
         }
       }
       const written = await writeDocs({
