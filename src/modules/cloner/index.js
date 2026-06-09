@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { simpleGit } from "simple-git";
-
+import AdmZip from "adm-zip";
 /**
  * Encapsula la logica de clonado de repositorios Git dentro del proyecto.
  * Cada clon se guarda en una carpeta unica dentro de /temp para evitar colisiones.
@@ -200,6 +200,23 @@ export class RepositoryCloner {
     }
 
     return existsSync(repositoryUrl);
+  }
+  async extractZip(zipPath) {
+    await this.ensureBaseTempDirectory();
+    const extractId = this.createCloneId(zipPath);
+    const tempPath = path.join(this.baseTempDir, extractId);
+    const repoPath = path.join(tempPath, "repository");
+
+    await fs.mkdir(tempPath, { recursive: true });
+    try {
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(repoPath, true);
+    } catch (error) {
+      await this.cleanup(tempPath);
+      throw new Error(`No se pudo extraer el zip: ${error.message}`);
+    }
+
+    return { repositoryUrl: zipPath, tempPath, repoPath, cloneId: extractId };
   }
 }
 

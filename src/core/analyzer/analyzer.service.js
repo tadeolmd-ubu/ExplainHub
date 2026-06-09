@@ -17,7 +17,10 @@ export class AnalyzerService {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
-    if (
+    if (input.endsWith(".zip")) {
+      result = await cloner.extractZip(input);
+      projectPath = result.repoPath;
+    } else if (
       input.startsWith("http://") ||
       input.startsWith("https://") ||
       input.startsWith("git@") ||
@@ -39,11 +42,18 @@ export class AnalyzerService {
     const generator = new TextGenerator();
 
     if (format === "md") {
-      if (result)
+      const isRemote =
+        input.startsWith("http://") ||
+        input.startsWith("https://") ||
+        input.startsWith("git@") ||
+        input.startsWith("git://");
+
+      if (result && isRemote) {
         return {
           summary:
             "Markdown docs only supported for local paths, not remote repos",
         };
+      }
 
       const { readme, modules } = generator.generate({
         technologies,
@@ -59,19 +69,23 @@ export class AnalyzerService {
 
       if (config.ollama.model) {
         const enhancer = new AiEnhancer();
-
         console.log("Mejorando README con IA...");
-        finalReadme = await enhancer.enhanceMarkdown(readme);
-
-        console.log(
-          `Mejorando ${modules.length} módulos con IA, uno a la vez...`,
-        );
+        try {
+          finalReadme = await enhancer.enhanceMarkdown(readme);
+        } catch (e) {
+          console.error(e.message);
+          finalReadme = readme;
+        }
         finalModules = [];
 
         for (const mod of modules) {
-          console.log(`  Mejorando ${mod.name}...`);
-          const content = await enhancer.enhanceMarkdown(mod.content);
-          finalModules.push({ ...mod, content });
+          try {
+            const content = await enhancer.enhanceMarkdown(mod.content);
+            finalModules.push({ ...mod, content });
+          } catch (e) {
+            console.error(e.message);
+            finalModules.push({ ...mod, content: mod.content });
+          }
         }
       }
       const written = await writeDocs({
@@ -79,6 +93,7 @@ export class AnalyzerService {
         readme: finalReadme,
         modules: finalModules,
       });
+      if (result) await cloner.cleanup(result.tempPath);
       return { summary: `Document generated: ${written} files` };
     }
 
