@@ -16,6 +16,7 @@
   "dependencies": {
     "@babel/parser": "^7.29.3",
     "@clack/prompts": "^1.4.0",
+    "adm-zip": "^0.5.17",
     "bullmq": "^5.76.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
