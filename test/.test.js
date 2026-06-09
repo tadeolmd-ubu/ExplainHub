@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import "dotenv/config";
+import path from "node:path";
 import { RepositoryCloner } from "../src/modules/cloner/index.js";
 import { StructureExtractor } from "../src/modules/structure-extractor/index.js";
 import { CodeParser } from "../src/modules/code-parser/index.js";
@@ -67,4 +68,26 @@ test("should return a string whith the recap of the project", async () => {
   const result = await aiEnhancer.enhance(text);
   assert.equal(typeof result, "string");
   assert.ok(result.length > 0);
+});
+//==========FORMAT MD==========//
+
+test("should return /docs with the modules of the app in format md", async () => {
+  const textGenerator = new TextGenerator();
+  const structureExtractor = new StructureExtractor();
+  const codeParser = new CodeParser();
+  const { technologies, entryPoints, tree } =
+    await structureExtractor.extract(".");
+  const files = await codeParser.parse(tree, ".");
+  const { readme, modules } = textGenerator.generate({
+    technologies,
+    entryPoints,
+    files,
+    tree,
+    projectPath: ".",
+    format: "md",
+  });
+  assert.equal(typeof readme, "string");
+  assert.ok(readme.length > 0);
+  assert.ok(Array.isArray(modules));
+  assert.ok(modules.length > 0);
 });
