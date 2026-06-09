@@ -1,5 +1,7 @@
 # ExplainHub
 
+![Tests](https://github.com/tadeolmd-ubu/ExplainHub/actions/workflows/test.yml/badge.svg)
+
 explainHub analyzes any Git repository — clones it, parses its source code via AST, and generates a structured plain-text summary. Optionally enhances the summary with a local LLM (Ollama) to produce a polished narrative report in Spanish or Markdown.
 
 ---
@@ -36,13 +38,13 @@ Output                →  Console + optional save to .txt/.md file
 
 | Step | Module | What it does |
 |------|--------|-------------|
-| 1 | RepositoryCloner | Clones remote or local repos into `/temp` |
+| 1 | RepositoryCloner | Clones remote or local repos into `/temp`; extracts `.zip` files |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS/HTML/CSS via `@babel/parser` AST |
-| 4 | TextGenerator | Produces structured plain text report |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL via `@babel/parser` AST and SQL parsers |
+| 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
-| — | CLI | Interactive menu: URL, local path, .zip, format selection, save to file |
+| — | CLI | Interactive menu: URL, local path, .zip, format selection (txt/md), save to file |
 
 ---
 
@@ -92,10 +94,17 @@ Follow the prompts: select input type (URL, local path, .zip), choose format (tx
 ### 2. Run tests
 
 ```bash
-node --test test/.test.js
+node --test
 ```
 
-Requires Ollama running for the AI enhancer test.
+Runs all tests in `test/` using Node's built-in test runner (`node:test`). Tests that require Ollama will be skipped automatically if `OLLAMA_MODEL` is not set.
+
+**Test files:**
+| File | Coverage |
+|------|----------|
+| `test/.test.js` | Cloner, StructureExtractor, CodeParser, TextGenerator, AiEnhancer, AnalyzerService |
+| `test/md-flow.test.js` | Markdown flow: README sections, modules structure, no-package.json fallback |
+| `test/zip-flow.test.js` | ZIP extraction: valid zip, invalid zip error |
 
 ---
 
@@ -161,6 +170,10 @@ server.js                           # Entry point (legacy API)
 - **Environment-configured**: Model selection and server URLs come from `.env`
 
 ---
+
+## CI / CD
+
+Tests run automatically via GitHub Actions on every push and pull request to `main` and `dev`. See [`.github/workflows/test.yml`](.github/workflows/test.yml) for details.
 
 ## Contributing
 
