@@ -57,7 +57,7 @@ Runs the complete analysis pipeline.
    **`format === "md"`**:
    - Only works with local paths (remote repos return an error message)
    - `TextGenerator.generate({ technologies, entryPoints, files, tree, projectPath, format: "md" })` → `{ readme, modules[] }`
-   - If `OLLAMA_MODEL` is configured: `enhancer.enhanceMarkdown()` improves README and each module doc via AI
+   - If `OLLAMA_MODEL` is configured: `enhancer.enhanceMarkdown()` improves README and each module doc via AI (with `[N/total]` progress log per module)
    - `writeDocs()` writes `README.md` and `docs/<module>.md` to the project directory
    - CLI skips the save prompt (docs are already on disk)
 
