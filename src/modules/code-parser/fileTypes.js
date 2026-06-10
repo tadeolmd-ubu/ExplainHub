@@ -9,4 +9,6 @@ export const fileTypes = {
   ".json": "data",
   ".html": "markup",
   ".sql": "sql",
+  ".py": "python",
+  ".pyw": "python",
 };

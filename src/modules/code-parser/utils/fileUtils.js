@@ -25,6 +25,7 @@ const parseableTypes = new Set([
   "markup",
   "stylesheet",
   "sql",
+  "python",
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);

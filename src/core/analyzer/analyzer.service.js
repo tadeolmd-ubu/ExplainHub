@@ -72,18 +72,22 @@ export class AnalyzerService {
         console.log("Mejorando README con IA...");
         try {
           finalReadme = await enhancer.enhanceMarkdown(readme);
+          console.log("✓ README mejorado");
         } catch (e) {
           console.error(e.message);
           finalReadme = readme;
         }
         finalModules = [];
 
-        for (const mod of modules) {
+        const total = modules.length;
+        for (let i = 0; i < total; i++) {
+          const mod = modules[i];
+          console.log(`  [${i + 1}/${total}] Mejorando ${mod.name}...`);
           try {
             const content = await enhancer.enhanceMarkdown(mod.content);
             finalModules.push({ ...mod, content });
           } catch (e) {
-            console.error(e.message);
+            console.error(`  ✗ ${mod.name}: ${e.message}`);
             finalModules.push({ ...mod, content: mod.content });
           }
         }
