@@ -9,27 +9,27 @@ explainHub analyzes any Git repository — clones it, parses its source code via
 ## Pipeline
 
 ```
-Repository (local or remote)
+Repository (local, remote, or .zip)
     │
     ▼
-RepositoryCloner      →  Clones repo to temp directory
+RepositoryCloner      →  Clones repo / extracts .zip to temp directory
     │
     ▼
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
     ▼
-CodeParser            →  Parses JS/TS/HTML/CSS with @babel/parser AST
+CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python
                         Extracts imports, exports, functions, classes, routes
     │
     ▼
-TextGenerator         →  Transforms analysis data into plain text sections
+TextGenerator         →  Transforms analysis data into plain text or Markdown
     │
     ▼
-AiEnhancer            →  Sends plain text to local LLM (Ollama)
-                        Returns a narrative report in txt or md
+AiEnhancer            →  Sends report to local LLM (Ollama)
+                        Returns enhanced narrative in txt or md
     │
     ▼
-Output                →  Console + optional save to .txt/.md file
+Output                →  Console + optional save to .txt / README.md + docs/*
 ```
 
 ---
@@ -40,7 +40,7 @@ Output                →  Console + optional save to .txt/.md file
 |------|--------|-------------|
 | 1 | RepositoryCloner | Clones remote or local repos into `/temp`; extracts `.zip` files |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL via `@babel/parser` AST and SQL parsers |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python via `@babel/parser`, SQL AST, and shell-to-`ast` |
 | 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
@@ -135,7 +135,7 @@ src/
 │   ├── cli/                       # Interactive CLI (@clack/prompts)
 │   ├── cloner/                    # RepositoryCloner
 │   ├── structure-extractor/       # StructureExtractor
-│   ├── code-parser/               # CodeParser + AST extractors
+│   ├── code-parser/               # CodeParser + AST extractors + Python parser
 │   ├── text-generator/            # TextGenerator + formatters
 │   ├── ai-enhancer/               # AiEnhancer + Ollama integration
 │   ├── security/                  # Path & size validation
@@ -155,7 +155,10 @@ server.js                           # Entry point (legacy API)
 |------------|---------|
 | Node.js 20+ | Runtime |
 | @babel/parser | AST parsing for JS/TS |
+| node-sql-parser | SQL AST parsing with dialect support |
+| python3 (ast module) | Python AST parsing via shell subprocess |
 | simple-git | Git operations |
+| adm-zip | ZIP file extraction |
 | Ollama | Local LLM inference |
 | @clack/prompts | Interactive CLI prompts |
 
@@ -166,7 +169,7 @@ server.js                           # Entry point (legacy API)
 - **Modular**: Each feature is a self-contained module in `src/modules/`
 - **Pipeline-oriented**: Modules connect sequentially, each transforming the output of the previous
 - **Pure formatters**: Text generation uses stateless functions with no side effects
-- **Fail-soft**: AST extractors catch errors per file without crashing the whole analysis
+- **Fail-soft**: AST extractors catch errors per file without crashing the whole analysis; Python syntax errors return empty structures
 - **Environment-configured**: Model selection and server URLs come from `.env`
 
 ---
