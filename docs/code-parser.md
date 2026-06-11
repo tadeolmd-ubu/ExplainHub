@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, and **Python** files using `@babel/parser` AST, regex-based parsers, `node-sql-parser` for SQL, and a shell-to-`ast` subprocess for Python, extracting structural information: imports, exports, functions, classes, HTTP routes, and database schema objects.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, and **PHP** files using `@babel/parser` AST, regex-based parsers, `node-sql-parser` for SQL, a shell-to-`ast` subprocess for Python, and `php-parser` for PHP, extracting structural information: imports, exports, functions, classes, HTTP routes, and database schema objects.
 
 **Location:** `src/modules/code-parser/`
 
@@ -29,6 +29,7 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, and *
 | `extractors/routesExtractor.js` | Extracts Express-style route definitions |
 | `parsers/sqlParser.js` | SQL parser using `node-sql-parser` + regex fallback |
 | `parsers/pyParser.js` | Python parser using shell-to-`ast` (single + batch) |
+| `parsers/phpParser.js` | PHP parser using `php-parser` AST (single walk) |
 | `extractors/alterExtractor.js` | Extracts ALTER TABLE operations |
 | `extractors/commentExtractor.js` | Extracts SQL comments |
 | `extractors/createOtherExtractor.js` | Extracts CREATE VIEW/INDEX/FUNCTION/PROCEDURE/TRIGGER |
@@ -168,6 +169,29 @@ Parses Python files by spawning a single `python3` process and using the built-i
 
 ---
 
+### PHP Parser (`phpParser.js`)
+
+Parses PHP files using the `php-parser` npm package (pure JS, zero dependencies). Uses a single recursive walk over the AST to extract all data in one pass.
+
+**Extracted objects:**
+
+| Element | Properties | How |
+|---------|-----------|-----|
+| Imports | `source, alias, line` | `usegroup` nodes → items |
+| Functions | `name, params[], line` | Module-level `function` nodes |
+| Classes | `name, kind("class"|"interface"|"trait"|"enum"), extends, methods[], constants[], line` | Class body with method and constant extraction |
+| Routes | `method, path, line` | `Route::get/post/...` static calls + PHP 8 attributes (`#[Route()]`, `#[Get()]`, `#[Post()]`, etc.) |
+| Exports | `name, kind, line` | Public functions, classes, interfaces, traits, enums, constants, and global variables |
+
+**PHP 8 attribute routes:**
+- `#[Route('/path', methods: ['GET'])]` → extracts path and method from named `methods` argument
+- `#[Get('/path')]`, `#[Post('/path')]`, etc. → attribute name becomes the HTTP method
+
+**Fault tolerance:**
+- Parse errors in PHP code propagate as exceptions (handled by CodeParser's per-file try/catch)
+
+---
+
 ## Extractors
 
 ### Import Extractor
@@ -224,6 +248,7 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.css` | `stylesheet` | Yes |
 | `.sql` | `sql` | Yes |
 | `.py`, `.pyw` | `python` | Yes |
+| `.php` | `php` | Yes |
 | `.json` | `data` | No |
 
 ---
@@ -256,13 +281,14 @@ CodeParser.parse(tree, projectPath)
     |
     +-- for each non-Python parseable file:
     |       readFile(filePath)
-    |       getFileType(filePath)  →  "javascript" | "sql" | ...
+    |       getFileType(filePath)  →  "javascript" | "sql" | "php" | ...
     |       parseByType(type, content)
     |           +-- jsParser: @babel/parser → AST
     |           +-- tsParser: @babel/parser → AST
     |           +-- htmlParser: regex-based
     |           +-- cssParser: regex-based
     |           +-- sqlParser: node-sql-parser → AST + regex fallback
+    |           +-- phpParser: php-parser → AST (single walk)
     |       return { filePath, type, imports, exports, functions, classes, routes, ... }
     |
     +-- merge Python batch results with individual results
@@ -277,6 +303,7 @@ CodeParser.parse(tree, projectPath)
 |--------|--------|---------|
 | `@babel/parser` | npm | JavaScript/TypeScript AST parsing |
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
+| `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
 | `execFile` | `node:child_process` | Spawn Python process (single batch per project) |
 | `fs` | `node:fs/promises` | File reading |
@@ -307,5 +334,5 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, and Python out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, and PHP out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
