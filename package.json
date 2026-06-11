@@ -23,6 +23,7 @@
     "ioredis": "^5.10.1",
     "node-sql-parser": "^5.4.0",
     "ollama": "^0.6.3",
+    "php-parser": "^3.7.0",
     "simple-git": "^3.36.0"
   },
   "devDependencies": {
