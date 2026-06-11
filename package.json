@@ -24,7 +24,9 @@
     "node-sql-parser": "^5.4.0",
     "ollama": "^0.6.3",
     "php-parser": "^3.7.0",
-    "simple-git": "^3.36.0"
+    "simple-git": "^3.36.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.26.9"
   },
   "devDependencies": {
     "@babel/parser": "^7.29.3",
