@@ -11,4 +11,5 @@ export const fileTypes = {
   ".sql": "sql",
   ".py": "python",
   ".pyw": "python",
+  ".php": "php",
 };

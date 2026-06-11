@@ -35,7 +35,8 @@ const FILES_TYPES = {
   markup: "HTML template",
   stylesheet: "CSS styles",
   sql: "SQL script",
-  python: "Python module"
+  python: "Python module",
+  php: "PHP module"
 };
 
 function getFileTypeDesc(type) {
