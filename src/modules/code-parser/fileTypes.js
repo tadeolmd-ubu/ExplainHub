@@ -12,4 +12,5 @@ export const fileTypes = {
   ".py": "python",
   ".pyw": "python",
   ".php": "php",
+  ".cs": "csharp"
 };
