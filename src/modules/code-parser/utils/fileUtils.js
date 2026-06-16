@@ -28,6 +28,10 @@ const parseableTypes = new Set([
   "python",
   "php",
   "csharp",
+  "sln",
+  "csproj",
+  "config",
+  "xaml",config
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);
