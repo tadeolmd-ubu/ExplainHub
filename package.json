@@ -16,15 +16,18 @@
   "dependencies": {
     "@babel/parser": "^7.29.3",
     "@clack/prompts": "^1.4.0",
+    "@vscode/tree-sitter-wasm": "^0.3.1",
     "adm-zip": "^0.5.17",
     "bullmq": "^5.76.2",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "fast-xml-parser": "^5.9.0",
     "ioredis": "^5.10.1",
     "node-sql-parser": "^5.4.0",
     "ollama": "^0.6.3",
     "php-parser": "^3.7.0",
-    "simple-git": "^3.36.0"
+    "simple-git": "^3.36.0",
+    "web-tree-sitter": "^0.26.9"
   },
   "devDependencies": {
     "@babel/parser": "^7.29.3",
