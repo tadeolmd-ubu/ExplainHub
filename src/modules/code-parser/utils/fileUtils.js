@@ -31,7 +31,7 @@ const parseableTypes = new Set([
   "sln",
   "csproj",
   "config",
-  "xaml",config
+  "xaml",
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);

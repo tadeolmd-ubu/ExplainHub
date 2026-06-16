@@ -6,6 +6,10 @@ import { parseSql } from "./sqlParser.js";
 import { parsePython } from "./pyParser.js";
 import { parsePhp } from "./phpParser.js";
 import { parseCs } from "./csParser.js";
+import { parseSln } from "./slnParser.js";
+import { parseCsproj } from "./csprojParser.js";
+import { parseConfig } from "./configParser.js";
+import { parseXaml } from "./xamlParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -16,6 +20,10 @@ const parsers = {
   python: parsePython,
   php: parsePhp,
   csharp: parseCs,
+  sln: parseSln,
+  csproj: parseCsproj,
+  config: parseConfig,
+  xaml: parseXaml,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];
