@@ -38,6 +38,7 @@ const FILES_TYPES = {
   python: "Python module",
   php: "PHP module",
   csharp: "C# module",
+  sln: "Solution file"
 };
 
 function getFileTypeDesc(type) {

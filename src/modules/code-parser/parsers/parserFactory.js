@@ -6,6 +6,7 @@ import { parseSql } from "./sqlParser.js";
 import { parsePython } from "./pyParser.js";
 import { parsePhp } from "./phpParser.js";
 import { parseCs } from "./csParser.js";
+import { parseSln } from "./slnParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
