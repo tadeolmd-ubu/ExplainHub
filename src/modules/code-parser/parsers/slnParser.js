@@ -1,6 +1,5 @@
 const PROJECT_RE =
-  /Project\(\s*"\{?(?<typeGuid>[^}]+)"?\s*\)\s*=\s*"(?<name>[^"]+)"\s*,\s*"(?<path>[^"]+)"\s*,\s*"(?<guid>[^"]+)"\s*\)/g;
-
+  /Project\(\s*"(?:\{(?<typeGuid>[^}]+)\}|(?<typeGuid2>[^"]+))"\s*\)\s*=\s*"(?<name>[^"]+)"\s*,\s*"(?<path>[^"]+)"\s*,\s*"(?<guid>[^"]+)/g;
 const PROJECT_TYPES = {
   "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC": "C#",
   "F184B08F-C81C-45F6-A57F-5ABD9991F28F": "VB.NET",
@@ -17,16 +16,18 @@ export function parseSln(content) {
       name: match.groups.name,
       path: match.groups.path.replace(/\\/g, "/"),
       type:
-        PROJECT_TYPES[match.groups.typeGuid.toUpperCase()] ||
-        match.groups.typeGuid,
+        PROJECT_TYPES[
+          match.groups.typeGuid?.toUpperCase() ||
+            match.groups.typeGuid2?.toUpperCase()
+        ] || "Unknown",
     });
   }
   return {
-    imports: projects.map((p) => p.path), // path a cada csproj
+    imports: projects.map((p) => p.path),
     functions: [],
     classes: [],
     routes: [],
     exports: [],
-    projects, // ← campo extra con la estructura completa
+    projects,
   };
 }
