@@ -6,7 +6,6 @@ export function buildPromptMd(plainText) {
 4. DEPENDENCIAS EXTERNAS - Librerías clave que usa el proyecto
 5. NÚCLEO DEL PROYECTO - Archivos más importados, por dónde empezar a leer
 6. SEGURIDAD - Prácticas observadas o faltantes
-7. RECOMENDACIONES - Sugerencias para empezar a desarrollar
 Responde en español. Usa formato Markdown: ## para títulos, **negritas** para términos clave, 'codigo' para fragmentos de código, y tablas cuando sea necesario.
 Análisis técnico:
 ${plainText}
