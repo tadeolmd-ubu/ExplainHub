@@ -4,8 +4,10 @@ export function buildMdEnhancer(markdown) {
 IMPORTANTE:
 - NO inventes módulos, funciones, archivos o características que no aparezcan
 - Preserva TODA la información técnica, tablas y datos existentes
+- NO agregues "Título de:" ni ningún prefijo al título del proyecto. Preserva el título exactamente como está
+- NO agregues secciones de recomendaciones, sugerencias, consejos o próximos pasos
+- Si existe una sección de esquema de base de datos (Database Schema), presérvala completa con todas sus tablas, columnas y detalles
 - Mejora la redacción, legibilidad y formato
-- Agrega contexto descriptivo donde sea posible sin inventar
 - Mantén el formato markdown
 - Responde en español
 

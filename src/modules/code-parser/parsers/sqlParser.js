@@ -132,13 +132,15 @@ function parseParamList(text) {
 }
 
 function extractFromRaw(sql) {
-  const tables = [...sql.matchAll(
-    /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:`?|\[?)(\w+)(?:`?|\[?)/gim,
-  )].map((m) => {
-    const body = extractTableBody(sql, m.index);
-    const cols = extractTableColumns(body);
-    return { name: m[1], columns: cols, foreignKeys: [], primaryKey: [], uniqueConstraints: [], check: [], indexes: [] };
-  });
+ const tables = [...sql.matchAll(
+  /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((?:`?|\[?)\w+(?:`?|\]?)(?:\s*\.\s*(?:`?|\[?)\w+(?:`?|\]?))?)/gim,
+)].map((m) => {
+  const full = m[1];
+  const name = full.split('.').pop().replace(/^`|`$|^\[|\]$/g, '');
+  const body = extractTableBody(sql, m.index);
+  const cols = extractTableColumns(body);
+  return { name, columns: cols, foreignKeys: [], primaryKey: [], uniqueConstraints: [], check: [], indexes: [] };
+});
 
   const views = [
     ...sql.matchAll(
