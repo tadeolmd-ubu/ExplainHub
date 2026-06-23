@@ -16,5 +16,6 @@ export const fileTypes = {
   ".sln": "sln",
   ".csproj": "csproj",
   ".config": "config",
-  ".xaml": "xaml"
+  ".xaml": "xaml",
+  ".rs": "rust",
 };

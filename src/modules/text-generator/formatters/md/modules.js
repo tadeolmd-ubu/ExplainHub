@@ -42,6 +42,7 @@ const FILES_TYPES = {
   csproj: "C# project file",
   config: "Configuration file",
   xaml: "XAML view",
+  rust: "Rust module",
 };
 
 function getFileTypeDesc(type) {
