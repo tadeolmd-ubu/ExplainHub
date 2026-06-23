@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, and **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, and connection strings.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, and **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, and connection strings.
 
 **Location:** `src/modules/code-parser/`
 
@@ -35,6 +35,7 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/csprojParser.js` | .NET Project parser (XML via `fast-xml-parser`) |
 | `parsers/configParser.js` | .NET Config parser (XML via `fast-xml-parser`) |
 | `parsers/xamlParser.js` | WPF/XAML parser (XML via `fast-xml-parser`) |
+| `parsers/rsParser.js` | Rust parser using `web-tree-sitter` + WASM grammar |
 | `extractors/alterExtractor.js` | Extracts ALTER TABLE operations |
 | `extractors/commentExtractor.js` | Extracts SQL comments |
 | `extractors/createOtherExtractor.js` | Extracts CREATE VIEW/INDEX/FUNCTION/PROCEDURE/TRIGGER |
@@ -366,6 +367,36 @@ Parses `.xaml` files using `fast-xml-parser` with recursive tree walking. Handle
 
 ---
 
+### Rust Parser (`rsParser.js`)
+
+Parses `.rs` files using `web-tree-sitter` with a prebuilt Rust WASM grammar (from `@vscode/tree-sitter-wasm`). Uses the same lazy singleton pattern as the C# parser.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `use_declaration` | `source, alias, line` |
+| Functions | `function_item` (module-level, outside `impl`) | `name, params[], line` |
+| Structs | `struct_item` | `name, kind: "struct", methods[], line` |
+| Enums | `enum_item` | `name, kind: "enum", line` |
+| Traits | `trait_item` | `name, kind: "trait", methods[], line` |
+| Impl methods | `function_item` inside `impl_item` | Attached to parent struct/enum via `type_identifier` |
+| Routes | `attribute_item` with `#[get("...")]`, `#[post("...")]`, etc. | `method, path, line` |
+| Exports | Items with `visibility_modifier: "pub"` | `name, kind, line` |
+
+**Route attribute handling:**
+- `#[get("/path")]` → `GET /path`
+- `#[post("/path")]` → `POST /path`
+- `#[put("/path")]` → `PUT /path`
+- `#[delete("/path")]` → `DELETE /path`
+- `#[route("/path", method = "GET")]` → `ANY /path`
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+- WASM loading errors handled by the calling code
+
+---
+
 ## Extractors
 
 ### Import Extractor
@@ -424,6 +455,7 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.py`, `.pyw` | `python` | Yes | `python3 -c "import ast"` (batch) |
 | `.php` | `php` | Yes | `php-parser` |
 | `.cs` | `csharp` | Yes | `web-tree-sitter` (WASM) |
+| `.rs` | `rust` | Yes | `web-tree-sitter` (WASM) |
 | `.sln` | `sln` | Yes | regex |
 | `.csproj` | `csproj` | Yes | `fast-xml-parser` |
 | `.config` | `config` | Yes | `fast-xml-parser` |
@@ -469,6 +501,7 @@ CodeParser.parse(tree, projectPath)
     |           +-- sqlParser: node-sql-parser → AST + regex fallback
     |           +-- phpParser: php-parser → AST (single walk)
     |           +-- csParser: web-tree-sitter → CST (recursive walk)
+    |           +-- rsParser: web-tree-sitter → CST (recursive walk)
     |           +-- slnParser: regex-based
     |           +-- csprojParser: fast-xml-parser → XML
     |           +-- configParser: fast-xml-parser → XML (auto-detect App.config vs packages.config)
@@ -489,8 +522,8 @@ CodeParser.parse(tree, projectPath)
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
-| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C# parsing |
-| `@vscode/tree-sitter-wasm` | npm | Prebuilt C# WASM grammar (VS Code sourced) |
+| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C# and Rust parsing |
+| `@vscode/tree-sitter-wasm` | npm | Prebuilt C# and Rust WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
 | `execFile` | `node:child_process` | Spawn Python process (single batch per project) |
 | `fs` | `node:fs/promises` | File reading |
@@ -521,7 +554,7 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, .sln, .csproj, .config, and .xaml out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, .sln, .csproj, .config, and .xaml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
-- **C# WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once, reused across all `.cs` files.
+- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs` and `.rs` files.
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
