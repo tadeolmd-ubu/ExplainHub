@@ -18,8 +18,8 @@ RepositoryCloner      →  Clones repo / extracts .zip to temp directory
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
     ▼
-CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python
-                        Extracts imports, exports, functions, classes, routes
+CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/.NET
+                         Extracts imports, exports, functions, classes, routes
     │
     ▼
 TextGenerator         →  Transforms analysis data into plain text or Markdown
@@ -40,7 +40,7 @@ Output                →  Console + optional save to .txt / README.md + docs/*
 |------|--------|-------------|
 | 1 | RepositoryCloner | Clones remote or local repos into `/temp`; extracts `.zip` files |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python via `@babel/parser`, SQL AST, and shell-to-`ast` |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/.NET via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, and shell-to-`ast` |
 | 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
@@ -149,6 +149,41 @@ server.js                           # Entry point (legacy API)
 
 ---
 
+## Supported Languages
+
+The `CodeParser` can analyze the following file types:
+
+| Extension | Language | Parser Engine |
+|-----------|----------|---------------|
+| `.js`, `.mjs`, `.cjs`, `.jsx` | JavaScript | `@babel/parser` |
+| `.ts`, `.tsx` | TypeScript | `@babel/parser` |
+| `.html` | HTML | regex |
+| `.css` | CSS | regex |
+| `.sql` | SQL | `node-sql-parser` + regex fallback |
+| `.py`, `.pyw` | Python | `python3 -c "import ast"` (batch) |
+| `.php` | PHP | `php-parser` |
+| `.cs` | C# | `web-tree-sitter` (WASM) |
+| `.rs` | Rust | `web-tree-sitter` (WASM) |
+| `.sln` | Solution | regex |
+| `.csproj` | C# Project | `fast-xml-parser` |
+| `.config` | Configuration | `fast-xml-parser` |
+| `.xaml` | XAML | `fast-xml-parser` |
+
+### Planned Languages
+
+Languages we plan to add in future releases:
+
+| Language | Extension | Engine |
+|----------|-----------|--------|
+| Java | `.java` | `web-tree-sitter` (WASM) — grammar already bundled in `@vscode/tree-sitter-wasm` |
+| Go | `.go` | `web-tree-sitter` (WASM) — grammar already bundled |
+| Ruby | `.rb` | `web-tree-sitter` (WASM) — grammar already bundled |
+| C/C++ | `.c`, `.h`, `.cpp`, `.hpp` | `web-tree-sitter` (WASM) — grammar already bundled |
+| PowerShell | `.ps1`, `.psm1` | `web-tree-sitter` (WASM) — grammar already bundled |
+| INI | `.ini`, `.cfg` | `web-tree-sitter` (WASM) — grammar already bundled |
+
+---
+
 ## Tech Stack
 
 | Technology | Purpose |
@@ -156,6 +191,10 @@ server.js                           # Entry point (legacy API)
 | Node.js 20+ | Runtime |
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
+| php-parser | PHP AST parsing (pure JS, zero deps) |
+| web-tree-sitter | WASM-based AST parsing for C# and Rust |
+| @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, etc.) |
+| fast-xml-parser | XML parsing for .csproj, .config, .xaml |
 | python3 (ast module) | Python AST parsing via shell subprocess |
 | simple-git | Git operations |
 | adm-zip | ZIP file extraction |

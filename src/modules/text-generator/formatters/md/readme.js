@@ -35,13 +35,14 @@ function getProjectName(projectPath) {
 function overviewSection(technologies, entryPoints) {
   const techs =
     technologies?.length > 0
-      ? `**Technologies:** ${technologies.join(", ")}`
+      ? "| Technology |\n|------------|\n" +
+        technologies.map((t) => `| ${t} |`).join("\n")
       : "";
   const entries =
     entryPoints && Object.keys(entryPoints).length > 0
-      ? "**Entry points:**\n" +
+      ? "| Technology | File |\n|------------|------|\n" +
         Object.entries(entryPoints)
-          .flatMap(([tech, files]) => files.map((f) => `- ${tech} → ${f}`))
+          .flatMap(([tech, files]) => files.map((f) => `| ${tech} | ${f} |`))
           .join("\n")
       : "";
   if (!techs && !entries) return null;
@@ -70,11 +71,16 @@ function renderTree(node, lines, prefix) {
   }
 }
 
-const IGNORED_EXTENSIONS = ["node_modules", ".git", "dist", "build", "coverage", ".env"]
+const IGNORED_EXTENSIONS = [
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "coverage",
+  ".env",
+];
 function isIgnored(name) {
-  return IGNORED_EXTENSIONS.includes(
-    name,
-  );
+  return IGNORED_EXTENSIONS.includes(name);
 }
 
 function modulesSection(files) {
