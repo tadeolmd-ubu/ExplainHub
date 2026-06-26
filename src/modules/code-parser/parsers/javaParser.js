@@ -57,7 +57,6 @@ function isPublic(node) {
   return mods.children.some((c) => c.type === "public");
 }
 
-
 function getAttrArgText(attrNode) {
   const argList = attrNode.namedChildren.find(
     (c) => c.type === "annotation_argument_list",
@@ -165,7 +164,7 @@ export async function parseJava(content) {
             }
           }
         } else {
-          walk(child, parentClass || name);
+          walk(child, name);
         }
       }
 
