@@ -33,6 +33,8 @@ const parseableTypes = new Set([
   "config",
   "xaml",
   "rust",
+  "java",
+  "go",
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);

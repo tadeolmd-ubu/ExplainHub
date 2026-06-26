@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, and **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, and connection strings.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, and **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, and connection strings.
 
 **Location:** `src/modules/code-parser/`
 
@@ -36,6 +36,8 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/configParser.js` | .NET Config parser (XML via `fast-xml-parser`) |
 | `parsers/xamlParser.js` | WPF/XAML parser (XML via `fast-xml-parser`) |
 | `parsers/rsParser.js` | Rust parser using `web-tree-sitter` + WASM grammar |
+| `parsers/javaParser.js` | Java parser using `web-tree-sitter` + WASM grammar |
+| `parsers/goParser.js` | Go parser using `web-tree-sitter` + WASM grammar |
 | `extractors/alterExtractor.js` | Extracts ALTER TABLE operations |
 | `extractors/commentExtractor.js` | Extracts SQL comments |
 | `extractors/createOtherExtractor.js` | Extracts CREATE VIEW/INDEX/FUNCTION/PROCEDURE/TRIGGER |
@@ -397,6 +399,62 @@ Parses `.rs` files using `web-tree-sitter` with a prebuilt Rust WASM grammar (fr
 
 ---
 
+### Java Parser (`javaParser.js`)
+
+Parses `.java` files using `web-tree-sitter` with a prebuilt Java WASM grammar (from `@vscode/tree-sitter-wasm`). Uses the same lazy singleton pattern as the C# and Rust parsers.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `import_declaration` | `source, alias, line` |
+| Classes | `class_declaration`, `interface_declaration`, `enum_declaration`, `record_declaration` | `name, kind, methods[], line` |
+| Class methods | `method_declaration` (inside a class body) | `name, params[], line` (added to parent class's `methods[]`) |
+| Routes | `annotation` / `marker_annotation` inside `modifiers` — `@GetMapping`, `@PostMapping`, `@PutMapping`, `@DeleteMapping`, `@PatchMapping`, `@RequestMapping` | `method, path, line` |
+| Exports | Top-level `public` types | `name, kind, line` |
+
+**Annotations and visibility:**
+- Annotations are inside a `modifiers` node (not direct children of declarations)
+- `public` keyword is node type `"public"` (not `"modifier"`)
+- Annotation arguments use `annotation_argument_list` (not `argument_list`)
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+- WASM loading errors handled by the calling code
+
+---
+
+### Go Parser (`goParser.js`)
+
+Parses `.go` files using `web-tree-sitter` with a prebuilt Go WASM grammar (from `@vscode/tree-sitter-wasm`). Uses the same lazy singleton pattern as the C#, Rust, and Java parsers.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `import_declaration` → `import_spec` | `source, alias, line` (handles simple and grouped imports) |
+| Functions | `function_declaration` (module-level) | `name, params[], line` |
+| Structs | `type_declaration` → `type_spec` → `struct_type` | `name, kind: "struct", methods[], line` |
+| Interfaces | `type_declaration` → `type_spec` → `interface_type` | `name, kind: "interface", methods[], line` |
+| Methods | `method_declaration` with receiver | Name via `childForFieldName("name")`, parent resolved from receiver's `type_identifier`; supports pointer receivers (`*T`) |
+| Routes | `call_expression` → `selector_expression` with `field_identifier` = `GET`/`POST`/`PUT`/`DELETE`/`PATCH`/`Handle`/`HandleFunc` | `method, path, line` — Gin and std library style |
+| Exports | `function_declaration`, `type_spec`, `const_spec`, `var_spec` | `name, kind, line` — Go visibility rule: uppercase = exported |
+
+**Visibility in Go:**
+- A name is exported if its first character is uppercase (`isExported(name)`)
+- Exported items include: functions, structs, interfaces, constants, and variables with uppercase names
+
+**Route detection:**
+- Gin framework: `r.GET("/path", handler)` → `GET /path`
+- Standard library: `http.HandleFunc("/path", handler)` → `ANY /path`
+- Detected from `call_expression` nodes inside function bodies
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+- WASM loading errors handled by the calling code
+
+---
+
 ## Extractors
 
 ### Import Extractor
@@ -456,6 +514,8 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.php` | `php` | Yes | `php-parser` |
 | `.cs` | `csharp` | Yes | `web-tree-sitter` (WASM) |
 | `.rs` | `rust` | Yes | `web-tree-sitter` (WASM) |
+| `.java` | `java` | Yes | `web-tree-sitter` (WASM) |
+| `.go` | `go` | Yes | `web-tree-sitter` (WASM) |
 | `.sln` | `sln` | Yes | regex |
 | `.csproj` | `csproj` | Yes | `fast-xml-parser` |
 | `.config` | `config` | Yes | `fast-xml-parser` |
@@ -501,8 +561,10 @@ CodeParser.parse(tree, projectPath)
     |           +-- sqlParser: node-sql-parser → AST + regex fallback
     |           +-- phpParser: php-parser → AST (single walk)
     |           +-- csParser: web-tree-sitter → CST (recursive walk)
-    |           +-- rsParser: web-tree-sitter → CST (recursive walk)
-    |           +-- slnParser: regex-based
+     |           +-- rsParser: web-tree-sitter → CST (recursive walk)
+     |           +-- javaParser: web-tree-sitter → CST (recursive walk)
+     |           +-- goParser: web-tree-sitter → CST (recursive walk)
+     |           +-- slnParser: regex-based
     |           +-- csprojParser: fast-xml-parser → XML
     |           +-- configParser: fast-xml-parser → XML (auto-detect App.config vs packages.config)
     |           +-- xamlParser: fast-xml-parser → XML (recursive walk)
@@ -522,8 +584,8 @@ CodeParser.parse(tree, projectPath)
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
-| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C# and Rust parsing |
-| `@vscode/tree-sitter-wasm` | npm | Prebuilt C# and Rust WASM grammars (VS Code sourced) |
+| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, and Go parsing |
+| `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, and Go WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
 | `execFile` | `node:child_process` | Spawn Python process (single batch per project) |
 | `fs` | `node:fs/promises` | File reading |
@@ -554,7 +616,7 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, .sln, .csproj, .config, and .xaml out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, .sln, .csproj, .config, and .xaml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
-- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs` and `.rs` files.
+- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, and `.go` files.
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
