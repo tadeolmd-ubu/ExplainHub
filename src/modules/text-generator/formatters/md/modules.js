@@ -43,6 +43,7 @@ const FILES_TYPES = {
   config: "Configuration file",
   xaml: "XAML view",
   rust: "Rust module",
+  java: "Java Module",
 };
 
 function getFileTypeDesc(type) {
