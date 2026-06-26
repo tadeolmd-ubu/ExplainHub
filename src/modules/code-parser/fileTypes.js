@@ -18,4 +18,5 @@ export const fileTypes = {
   ".config": "config",
   ".xaml": "xaml",
   ".rs": "rust",
+  ".java":"java",
 };
