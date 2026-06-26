@@ -19,4 +19,5 @@ export const fileTypes = {
   ".xaml": "xaml",
   ".rs": "rust",
   ".java":"java",
+  ".go": "go",
 };
