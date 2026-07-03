@@ -13,6 +13,7 @@ import { parseXaml } from "./xamlParser.js";
 import { parseRs } from "./rsParser.js";
 import { parseJava } from "./javaParser.js";
 import { parseGo } from "./goParser.js";
+import { parseCPP } from "./cParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -30,6 +31,8 @@ const parsers = {
   rust: parseRs,
   java: parseJava,
   go: parseGo,
+  c: parseCPP,
+  cpp: parseCPP,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];

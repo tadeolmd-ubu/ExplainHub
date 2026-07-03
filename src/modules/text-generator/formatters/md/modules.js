@@ -45,6 +45,8 @@ const FILES_TYPES = {
   rust: "Rust module",
   java: "Java module",
   go: "Go module",
+  c: "C source file",
+  cpp: "C++ source file",
 };
 
 function getFileTypeDesc(type) {
