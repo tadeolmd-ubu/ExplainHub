@@ -35,6 +35,8 @@ const parseableTypes = new Set([
   "rust",
   "java",
   "go",
+  "c",
+  "cpp",
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);
