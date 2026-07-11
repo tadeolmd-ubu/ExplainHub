@@ -27,6 +27,7 @@
     "ollama": "^0.6.3",
     "php-parser": "^3.7.0",
     "simple-git": "^3.36.0",
+    "smol-toml": "^1.7.0",
     "web-tree-sitter": "^0.26.9"
   },
   "devDependencies": {
