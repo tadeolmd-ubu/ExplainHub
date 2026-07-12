@@ -69,10 +69,11 @@ function extractFeatures(doc) {
 }
 
 function extractProfiles(doc) {
+  const profileSection = doc.profile;
+  if (!profileSection || typeof profileSection !== "object") return null;
   const profiles = {};
-  for (const [key, value] of Object.entries(doc)) {
-    if (key.startsWith("profile.") && typeof value === "object") {
-      const name = key.replace("profile.", "");
+  for (const [name, value] of Object.entries(profileSection)) {
+    if (typeof value === "object" && value !== null) {
       profiles[name] = {
         optLevel: value["opt-level"] ?? null,
         debug: value.debug ?? null,
@@ -132,11 +133,12 @@ function extractBuildTargets(doc) {
 }
 
 function extractPatches(doc) {
+  const patchSection = doc.patch;
+  if (!patchSection || typeof patchSection !== "object") return null;
   const patches = {};
-  for (const [key, value] of Object.entries(doc)) {
-    if (key.startsWith("patch.") && typeof value === "object") {
-      const source = key.replace("patch.", "");
-      patches[source] = Object.entries(value).map(([name, dep]) => ({
+  for (const [source, deps] of Object.entries(patchSection)) {
+    if (typeof deps === "object" && deps !== null) {
+      patches[source] = Object.entries(deps).map(([name, dep]) => ({
         name,
         version: typeof dep === "string" ? dep : dep.version || "",
         git: typeof dep === "object" ? dep.git || "" : "",
@@ -149,11 +151,12 @@ function extractPatches(doc) {
 }
 
 function extractPlatformDeps(doc) {
+  const targetSection = doc.target;
+  if (!targetSection || typeof targetSection !== "object") return null;
   const platformDeps = {};
-  for (const [key, value] of Object.entries(doc)) {
-    if (key.startsWith("target.") && key.includes(".dependencies") && typeof value === "object") {
-      const target = key.replace(/^target\./, "").replace(/\.dependencies$/, "");
-      platformDeps[target] = Object.entries(value).map(([name, dep]) => ({
+  for (const [triple, config] of Object.entries(targetSection)) {
+    if (typeof config === "object" && config !== null && config.dependencies) {
+      platformDeps[triple] = Object.entries(config.dependencies).map(([name, dep]) => ({
         name,
         version: typeof dep === "string" ? dep : dep.version || "",
       }));

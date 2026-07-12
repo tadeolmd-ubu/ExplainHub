@@ -38,16 +38,17 @@ function extractAliases(doc) {
 }
 
 function extractTargets(doc) {
+  const targetSection = doc.target;
+  if (!targetSection || typeof targetSection !== "object") return null;
   const targets = {};
-  for (const [key, value] of Object.entries(doc)) {
-    if (key.startsWith("target.") && typeof value === "object") {
-      const triple = key.replace("target.", "");
+  for (const [triple, config] of Object.entries(targetSection)) {
+    if (typeof config === "object" && config !== null) {
       targets[triple] = {
-        linker: value.linker || null,
-        rustflags: Array.isArray(value.rustflags)
-          ? value.rustflags
-          : value.rustflags
-            ? [value.rustflags]
+        linker: config.linker || null,
+        rustflags: Array.isArray(config.rustflags)
+          ? config.rustflags
+          : config.rustflags
+            ? [config.rustflags]
             : [],
       };
     }
