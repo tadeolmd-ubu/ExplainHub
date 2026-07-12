@@ -25,4 +25,6 @@ export const fileTypes = {
   ".cpp": "cpp",
   ".cc": "cpp",
   ".cxx": "cpp",
+  ".toml": "toml",
+  ".lock": "lock",
 };
