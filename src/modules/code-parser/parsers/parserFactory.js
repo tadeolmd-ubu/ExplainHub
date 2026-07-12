@@ -14,6 +14,10 @@ import { parseRs } from "./rsParser.js";
 import { parseJava } from "./javaParser.js";
 import { parseGo } from "./goParser.js";
 import { parseCPP } from "./cParser.js";
+import { parseCargoToml } from "./cargoTomlParser.js";
+import { parseCargoLock } from "./cargoLockParser.js";
+import { parseRustToolchain } from "./rustToolChainParser.js";
+import { parseCargoConfig } from "./cargoConfigParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -33,6 +37,10 @@ const parsers = {
   go: parseGo,
   c: parseCPP,
   cpp: parseCPP,
+  cargotoml: parseCargoToml,
+  cargolock: parseCargoLock,
+  rusttoolchain: parseRustToolchain,
+  cargoconfig: parseCargoConfig,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];
