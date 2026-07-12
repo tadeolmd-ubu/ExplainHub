@@ -3,4 +3,9 @@ export const entryRules = {
   "Python": ["main.py", "app.py"],
   "Frontend": ["index.html"],
   "Java": ["Main.java"],
+  "Rust": ["main.rs", "lib.rs"],
+  "Go": ["main.go"],
+  "C#": ["Program.cs", "Main.cs"],
+  "C": ["main.c"],
+  "C++": ["main.cpp"],
 };

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, and **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, and connection strings.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), and **Cargo project files** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.cargo/config.toml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, Cargo dependencies, build profiles, workspace structure, and more.
 
 **Location:** `src/modules/code-parser/`
 
@@ -39,6 +39,10 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/javaParser.js` | Java parser using `web-tree-sitter` + WASM grammar |
 | `parsers/goParser.js` | Go parser using `web-tree-sitter` + WASM grammar |
 | `parsers/cParser.js` | C/C++ parser using `web-tree-sitter` + WASM grammar (handles both C and C++) |
+| `parsers/cargoTomlParser.js` | Cargo.toml parser using `smol-toml` (package metadata, deps, workspace, features, profiles, build targets, patches) |
+| `parsers/cargoLockParser.js` | Cargo.lock parser using `smol-toml` (resolved dependency tree with versions and checksums) |
+| `parsers/rustToolChainParser.js` | rust-toolchain.toml parser using `smol-toml` (toolchain channel, components, targets) |
+| `parsers/cargoConfigParser.js` | .cargo/config.toml parser using `smol-toml` (build config, registries, aliases, targets) |
 | `extractors/alterExtractor.js` | Extracts ALTER TABLE operations |
 | `extractors/commentExtractor.js` | Extracts SQL comments |
 | `extractors/createOtherExtractor.js` | Extracts CREATE VIEW/INDEX/FUNCTION/PROCEDURE/TRIGGER |
@@ -400,7 +404,150 @@ Parses `.rs` files using `web-tree-sitter` with a prebuilt Rust WASM grammar (fr
 
 ---
 
-### Java Parser (`javaParser.js`)
+### Cargo.toml Parser (`cargoTomlParser.js`)
+
+Parses `Cargo.toml` files using `smol-toml` (TOML v1.1.0 compliant, zero dependencies, ESM native). Extracts package metadata, dependencies, workspace configuration, feature flags, build profiles, build targets, patches, and platform-specific dependencies.
+
+**Extracted objects:**
+
+| Element | TOML Section | Properties |
+|---------|-------------|-----------|
+| Package metadata | `[package]` | `name, version, edition, authors, description, license, repository, homepage, documentation, readme, keywords, categories, rustVersion, publish, build, links, resolver, exclude, include, defaultRun` |
+| Normal dependencies | `[dependencies]` | `name, version, features[], optional, defaultFeatures, git, branch, tag, rev, path, registry, package, workspace` |
+| Dev dependencies | `[dev-dependencies]` | Same as normal |
+| Build dependencies | `[build-dependencies]` | Same as normal |
+| Features | `[features]` | `{ featureName: string[] }` — supports `dep:`, `?`, and `/` syntax |
+| Profiles | `[profile.*]` | `{ name: { optLevel, debug, lto, codegenUnits, panic, incremental, strip, debugAssertions, overflowChecks, inherits } }` |
+| Workspace | `[workspace]` | `{ members[], exclude[], defaultMembers[], resolver }` |
+| Build targets | `[[bin]]`, `[lib]`, `[[example]]`, `[[test]]`, `[[bench]]` | `{ bin: [{ name, path, requiredFeatures }], lib: { name, path, crateType[], procMacro, doctest }, ... }` |
+| Patches | `[patch.*]` | `{ "crates-io": [{ name, version, git, branch, path }] }` |
+| Platform deps | `[target.*.dependencies]` | `{ "cfg(unix)": [{ name, version }] }` |
+
+**Dependency formats handled:**
+
+```toml
+# Simple string
+serde = "1.0"
+
+# Table with options
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+# Git dependency
+my-fork = { git = "https://github.com/user/fork.git", branch = "feature" }
+
+# Path dependency
+local-utils = { path = "libs/local-utils" }
+
+# Workspace inheritance
+serde.workspace = true
+```
+
+**Return value:**
+```javascript
+{
+  imports: ["serde@1.0", "tokio@1.37", ...],  // for dependencyFormatter
+  package: { name, version, edition, authors, ... },
+  dependencies: { normal: [...], dev: [...], build: [...] },
+  features: { default: ["std"], full: ["std", "derive"] },
+  profiles: { release: { optLevel: 3, lto: true }, dev: { debug: true } },
+  workspace: { members: ["crate-a", "crate-b"], resolver: "2" },
+  buildTargets: { bin: [...], lib: {...}, example: [...], test: [...], bench: [...] },
+  patches: { "crates-io": [...] },
+  platformDeps: { "cfg(unix)": [...] }
+}
+```
+
+**Fault tolerance:**
+- Invalid TOML → returns empty shape (not crash)
+- Missing sections → null/empty defaults
+
+---
+
+### Cargo.lock Parser (`cargoLockParser.js`)
+
+Parses `Cargo.lock` files using `smol-toml`. Extracts the resolved dependency tree with exact versions, sources, and checksums.
+
+**Extracted objects:**
+
+| Element | Properties |
+|---------|-----------|
+| Packages | `name, version, source, checksum, dependencies[{ name, version }]` |
+| Root package | `name, version` — the package without a `source` field |
+| Lock version | `lockfileVersion` (1, 2, or 3) |
+
+**Return value:**
+```javascript
+{
+  imports: ["serde@1.0.210", "mi-proyecto@0.1.0", ...],
+  lockfileVersion: 3,
+  packages: [{ name, version, source, checksum, deps: [...] }],
+  rootPackage: { name: "mi-proyecto", version: "0.1.0" }
+}
+```
+
+---
+
+### Rust Toolchain Parser (`rustToolChainParser.js`)
+
+Parses `rust-toolchain.toml` files using `smol-toml`. Extracts the toolchain configuration for rustup.
+
+**Extracted objects:**
+
+| Element | TOML Section | Properties |
+|---------|-------------|-----------|
+| Toolchain | `[toolchain]` | `channel, components[], targets[], profile` |
+
+**Example:**
+```toml
+[toolchain]
+channel = "nightly-2024-10-01"
+components = ["rustfmt", "clippy"]
+targets = ["x86_64-unknown-linux-gnu"]
+profile = "default"
+```
+
+**Return value:**
+```javascript
+{
+  toolchain: {
+    channel: "nightly-2024-10-01",
+    components: ["rustfmt", "clippy"],
+    targets: ["x86_64-unknown-linux-gnu"],
+    profile: "default"
+  }
+}
+```
+
+---
+
+### Cargo Config Parser (`cargoConfigParser.js`)
+
+Parses `.cargo/config.toml` files using `smol-toml`. Extracts Cargo build configuration, custom registries, network settings, command aliases, and per-target build options.
+
+**Extracted objects:**
+
+| Element | TOML Section | Properties |
+|---------|-------------|-----------|
+| Build config | `[build]` | `target, jobs, rustflags[], linker` |
+| Registries | `[registries.*]` | `[{ name, index }]` |
+| Network | `[net]` | `git-fetch-with-cli, retry` |
+| Aliases | `[alias]` | `{ alias: command }` |
+| Targets | `[target.*]` | `{ triple: { linker, rustflags[] } }` |
+
+**Return value:**
+```javascript
+{
+  cargoConfig: {
+    build: { target: "x86_64-unknown-linux-gnu", jobs: 4, rustflags: [...], linker: null },
+    registries: [{ name: "my-registry", index: "https://..." }],
+    net: { git-fetch-with-cli: true, retry: 3 },
+    aliases: { b: "build", t: "test" },
+    targets: { "x86_64-unknown-linux-gnu": { linker: "clang", rustflags: [...] } }
+  }
+}
+```
+
+---
 
 Parses `.java` files using `web-tree-sitter` with a prebuilt Java WASM grammar (from `@vscode/tree-sitter-wasm`). Uses the same lazy singleton pattern as the C# and Rust parsers.
 
@@ -554,6 +701,10 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.csproj` | `csproj` | Yes | `fast-xml-parser` |
 | `.config` | `config` | Yes | `fast-xml-parser` |
 | `.xaml` | `xaml` | Yes | `fast-xml-parser` |
+| `Cargo.toml` | `cargotoml` | Yes | `smol-toml` |
+| `Cargo.lock` | `cargolock` | Yes | `smol-toml` |
+| `rust-toolchain.toml` | `rusttoolchain` | Yes | `smol-toml` |
+| `.cargo/config.toml` | `cargoconfig` | Yes | `smol-toml` |
 | `.json` | `data` | No | — |
 
 ---
@@ -603,6 +754,10 @@ CodeParser.parse(tree, projectPath)
     |           +-- csprojParser: fast-xml-parser → XML
     |           +-- configParser: fast-xml-parser → XML (auto-detect App.config vs packages.config)
     |           +-- xamlParser: fast-xml-parser → XML (recursive walk)
+    |           +-- cargoTomlParser: smol-toml → TOML (package, deps, workspace, features, profiles, targets)
+    |           +-- cargoLockParser: smol-toml → TOML (resolved dependency tree)
+    |           +-- rustToolChainParser: smol-toml → TOML (toolchain config)
+    |           +-- cargoConfigParser: smol-toml → TOML (build config, registries, aliases)
     |       return { filePath, type, imports, exports, functions, classes, routes, ... }
     |
     +-- merge Python batch results with individual results
@@ -622,6 +777,7 @@ CodeParser.parse(tree, projectPath)
 | `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, and C/C++ parsing |
 | `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, Go, and C/C++ WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
+| `smol-toml` | npm | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
 | `execFile` | `node:child_process` | Spawn Python process (single batch per project) |
 | `fs` | `node:fs/promises` | File reading |
 | `path` | `node:path` | Path manipulation |
@@ -651,7 +807,8 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, .sln, .csproj, .config, and .xaml out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
 - **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, and `.cxx` files.
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
+- **TOML project files:** Cargo parsers handle `Cargo.toml` (package metadata, dependencies, workspace, features, profiles, build targets, patches), `Cargo.lock` (resolved dependency tree), `rust-toolchain.toml` (toolchain config), and `.cargo/config.toml` (build config, registries, aliases). File type resolution uses filename-based overrides for files sharing the `.toml` extension.

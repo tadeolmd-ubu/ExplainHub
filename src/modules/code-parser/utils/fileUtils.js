@@ -37,6 +37,16 @@ const parseableTypes = new Set([
   "go",
   "c",
   "cpp",
+  "cargotoml",
+  "cargolock",
+  "rusttoolchain",
+  "cargoconfig",
+]);
+const parseableTypesOverride = new Map([
+  ["Cargo.toml", "cargotoml"],
+  ["Cargo.lock", "cargolock"],
+  ["rust-toolchain.toml", "rusttoolchain"],
+  [".cargo/config.toml", "cargoconfig"],
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);
@@ -46,6 +56,15 @@ export async function readFile(filePath) {
   return fs.readFile(filePath, "utf-8");
 }
 export function getFileType(filePath) {
+  const basename = path.basename(filePath);
+  if (parseableTypesOverride.has(basename)) {
+    return parseableTypesOverride.get(basename);
+  }
+
+  if (basename === "config.toml" && path.basename(path.dirname(filePath)) === ".cargo") {
+    return "cargoconfig";
+  }
+
   const ext = path.extname(filePath);
   return fileTypes[ext] || "unknown";
 }
