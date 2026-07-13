@@ -12,9 +12,35 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "../../../.env"), quiet: true });
 const service = new AnalyzerService();
 
-async function main() {
-  c.intro("ExplainHub");
+const RAINBOW = [
+  "\x1b[31m",
+  "\x1b[33m",
+  "\x1b[32m",
+  "\x1b[36m",
+  "\x1b[34m",
+  "\x1b[35m",
+];
+const RESET = "\x1b[0m";
 
+const BANNER = [
+  ":::::::::::::    :::::::::::: :::           :::    ::::::::::::::::    :::::    :::::    ::::::::::::",
+  "     :+:       :+:    :+::+:    :+::+:         :+::+:      :+::    :+:+:   :+::+:    :+::+:    :+:",
+  "    +:+        +:+  +:+ +:+    :+:++:+        :+:+   :+:+     :+:+    :+:+:+  :++:+    :+:++:+    :+:",
+  "   +#++:++#    +#++:+  +#++:++#+ +#+       +#++:++#++:    +#+    +#+ +:+ +#++#++:++#+++#+    :+#++:++#+",
+  "  +#+        +#+  +#+ +#+       +#+       +#+     +#+    +#+    +#+  +#+#+#+#+#+    +#+#+    +#+#+    +#+",
+  " #+#       #+#    #+# +#+       #+#       #+#     #+#    #+#    #+#   #+# #+# #+#    #+# #+#    #+# #+#",
+  "#############    #######       #############     #################    #######    ### ######## #########",
+];
+
+function printBanner() {
+  for (let i = 0; i < BANNER.length; i++) {
+    console.log(RAINBOW[i % RAINBOW.length] + BANNER[i] + RESET);
+  }
+  console.log();
+}
+
+async function main() {
+  printBanner();
   const typeProject = await c.select({
     message: "Elige donde esta tu proyecto",
     options: [
