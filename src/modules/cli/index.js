@@ -95,7 +95,7 @@ async function main() {
   const result = await service.analyze(projectPath, format);
   c.outro("Análisis completado");
   console.log(result.summary);
-    if (result.repoPath) {
+  if (result.repoPath) {
     console.log(`\nProyecto clonado en:`);
     console.log(`  \x1b[36m${result.repoPath}\x1b[0m`);
     console.log(`  cd ${result.repoPath}`);

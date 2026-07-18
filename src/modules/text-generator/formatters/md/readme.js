@@ -28,7 +28,12 @@ function getProjectName(projectPath) {
     );
     return pkg.name || path.basename(projectPath);
   } catch {
-    return path.basename(projectPath);
+    const parentName = path.basename(path.dirname(projectPath));
+    const stripped = parentName.replace(
+      /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-/,
+      "",
+    );
+    return stripped || path.basename(projectPath);
   }
 }
 
