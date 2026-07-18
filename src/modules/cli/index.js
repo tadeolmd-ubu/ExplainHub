@@ -95,7 +95,11 @@ async function main() {
   const result = await service.analyze(projectPath, format);
   c.outro("Análisis completado");
   console.log(result.summary);
-
+  if (result.repoPath) {
+    console.log(`\nProyecto clonado en: ${result.repoPath}`);
+    process.chdir(result.repoPath);
+    console.log(`Directorio actual: ${process.cwd()}`);
+  }
   if (format !== "md") {
     const shouldSave = await c.confirm({
       message: "¿Guardar el resultado en un archivo?",
