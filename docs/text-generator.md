@@ -146,12 +146,17 @@ db/schema.sql
 Two formatters produce the markdown output for the `"md"` format:
 
 **`readme.js`** — Generates `README.md` with sections:
-- `# ` Project name (from `package.json`)
+- `# ` Project name (from `package.json`, Cargo.toml, or git clone directory name)
 - `## Overview` — Technologies and entry points
+- `## Project Info` — Version, edition, description, license, authors (from Cargo.toml or package.json)
+- `## Dependencies` — Dependency table with name, version, and type (from Cargo.toml or package.json)
+- `## Features` — Workspace features (from Cargo.toml, only if defined)
 - `## Project Structure` — ASCII directory tree (from `tree`)
-- `## Modules` — Table with links to `docs/<module>.md`
+- `## Modules` — Table with links to `docs/<module>.md` (unique links for duplicate directory names)
 - `## API Endpoints` — Route table (if routes exist)
 - `## Database Schema` — SQL objects table (if any exist)
+
+All sections are conditional — they only appear if data is available.
 
 **`modules.js`** — Called once per directory with parseable files. Generates `docs/<module>.md` with:
 - `# Module: ` name and file path
@@ -192,16 +197,18 @@ TextGenerator.generate({ technologies, entryPoints, files, tree, projectPath, fo
      |   alterFormatter(files)                             → string | null
      |   filter(Boolean) → join("\n\n") → return string
      |
-     ▼
+      ▼
   #generateMarkdown()
      |
      +-- readmeFormatter({ technologies, entryPoints, files, tree, projectPath })
      |       → "# Project...\n\n## Overview..."
+     |       → includes: projectInfoSection, dependenciesSection, featuresSection
+     |       (reads Cargo.toml or package.json directly for project data)
      |
-     +-- buildModules({ files })
-     |       → groups files by directory
+     +-- buildModules({ files, projectPath })
+     |       → groups files by directory (unique names for duplicates)
      |       → moduleFormatter({ name, files }) per group
-     |       → [{ name: "code-parser", content: "# Module: ..." }, ...]
+     |       → [{ name: "aster-core-src", content: "# Module: ..." }, ...]
      |
      +-- return { readme, modules[] }
 ```

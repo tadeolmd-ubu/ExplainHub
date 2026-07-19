@@ -13,7 +13,7 @@ Repository (local, remote, or .zip)
     │
     ▼
 RepositoryCloner      →  Clones repo / extracts .zip to temp directory
-    │
+    │                     (remote repos kept on disk after analysis)
     ▼
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
@@ -23,6 +23,7 @@ CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/
     │
     ▼
 TextGenerator         →  Transforms analysis data into plain text or Markdown
+                         (md includes: Project Info, Dependencies, Features, Modules)
     │
     ▼
 AiEnhancer            →  Sends report to local LLM (Ollama)
@@ -30,6 +31,7 @@ AiEnhancer            →  Sends report to local LLM (Ollama)
     │
     ▼
 Output                →  Console + optional save to .txt / README.md + docs/*
+                        (remote repos: path printed for navigation)
 ```
 
 ---
@@ -38,13 +40,13 @@ Output                →  Console + optional save to .txt / README.md + docs/*
 
 | Step | Module | What it does |
 |------|--------|-------------|
-| 1 | RepositoryCloner | Clones remote or local repos into `/temp`; extracts `.zip` files |
+| 1 | RepositoryCloner | Clones remote repos into `/temp` (kept on disk); extracts `.zip` files (cleaned up) |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
 | 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `smol-toml`, and shell-to-`ast` |
-| 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) |
+| 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) with Project Info, Dependencies, Features sections |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
-| — | CLI | Interactive menu: URL, local path, .zip, format selection (txt/md), save to file |
+| — | CLI | Interactive menu: URL, local path, .zip, format selection (txt/md), save to file. Prints cloned repo path after analysis |
 
 ---
 
@@ -129,21 +131,17 @@ Runs all tests in `test/` using Node's built-in test runner (`node:test`). Tests
 src/
 ├── config/env.js                  # Environment configuration
 ├── core/analyzer/
-│   ├── analyzer.service.js        # Orchestrates the full pipeline
-│   └── analyzer.routes.js         # Route definitions
+│   └── analyzer.service.js        # Orchestrates the full pipeline
 ├── modules/
 │   ├── cli/                       # Interactive CLI (@clack/prompts)
 │   ├── cloner/                    # RepositoryCloner
 │   ├── structure-extractor/       # StructureExtractor
-│   ├── code-parser/               # CodeParser + AST extractors + Python parser
-│   ├── text-generator/            # TextGenerator + formatters
+│   ├── code-parser/               # CodeParser + AST extractors + Cargo parsers
+│   ├── text-generator/            # TextGenerator + formatters (txt + md)
 │   ├── ai-enhancer/               # AiEnhancer + Ollama integration
-│   ├── security/                  # Path & size validation
-│   └── file-analyzer/             # Placeholder
+│   └── security/                  # Path & size validation
 ├── routes/
 │   └── analyzer.routes.js         # Express routes
-└── utils/
-    └── file.utils.js              # Placeholder
 server.js                           # Entry point (legacy API)
 ```
 
@@ -167,7 +165,7 @@ The `CodeParser` can analyze the following file types:
 | `.java` | Java | `web-tree-sitter` (WASM) |
 | `.go` | Go | `web-tree-sitter` (WASM) |
 | `.c`, `.h` | C | `web-tree-sitter` (WASM) |
-| `.cpp`, `.hpp`, `.cc`, `.cxx` | C++ | `web-tree-sitter` (WASM) |
+| `.cpp`, `.cc`, `.cxx` | C++ | `web-tree-sitter` (WASM) |
 | `.sln` | Solution | regex |
 | `.csproj` | C# Project | `fast-xml-parser` |
 | `.config` | Configuration | `fast-xml-parser` |
@@ -176,6 +174,16 @@ The `CodeParser` can analyze the following file types:
 | `Cargo.lock` | Cargo Lock | `smol-toml` |
 | `rust-toolchain.toml` | Rust Toolchain | `smol-toml` |
 | `.cargo/config.toml` | Cargo Config | `smol-toml` |
+
+### README Markdown Sections
+
+When generating Markdown (`format: "md"`), the README includes additional sections extracted from project config files:
+
+| Section | Source | Content |
+|---------|--------|---------|
+| Project Info | `Cargo.toml` or `package.json` | Version, edition, description, license, authors |
+| Dependencies | `Cargo.toml` or `package.json` | Dependency name, version, type (normal/dev/build) |
+| Features | `Cargo.toml` | Feature names and implications (only if defined) |
 
 ### Planned Languages
 

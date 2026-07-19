@@ -13,7 +13,6 @@ The `AnalyzerService` orchestrates the full ExplainHub pipeline. It accepts a re
 | File | Purpose |
 |------|---------|
 | `analyzer.service.js` | Core `AnalyzerService` class |
-| `analyzer.routes.js` | Express route definitions |
 
 ---
 
@@ -24,19 +23,20 @@ The `AnalyzerService` orchestrates the full ExplainHub pipeline. It accepts a re
 Runs the complete analysis pipeline.
 
 **Parameters:**
-- `input` (string) - Git remote URL or local filesystem path
+- `input` (string) - Git remote URL, local filesystem path, or `.zip` file path
 - `format` (string) - `"txt"` or `"md"` (default: `"txt"`)
 
 **Returns:**
 ```javascript
 {
   summary: string,       // AI-enhanced narrative in txt, or "Document generated: N files" for md
+  repoPath: string       // Path to the project (cloned or local) — useful for CLI navigation
 }
 ```
 
 ### Pipeline Logic
 
-1. **Input detection**: If the input looks like a remote URL (`http://`, `https://`, `git@`, `git://`), it's cloned via `RepositoryCloner`. Otherwise, it's treated as a local path.
+1. **Input detection**: If the input looks like a remote URL (`http://`, `https://`, `git@`, `git://`), it's cloned via `RepositoryCloner`. If it ends with `.zip`, it's extracted. Otherwise, it's treated as a local path.
 
 2. **Security validation** (local paths only):
    - `validatePath()` — rejects sensitive system directories
@@ -55,13 +55,13 @@ Runs the complete analysis pipeline.
    - CLI shows result and optionally saves to a `.txt`/`.md` file.
 
    **`format === "md"`**:
-   - Only works with local paths (remote repos return an error message)
    - `TextGenerator.generate({ technologies, entryPoints, files, tree, projectPath, format: "md" })` → `{ readme, modules[] }`
    - If `OLLAMA_MODEL` is configured: `enhancer.enhanceMarkdown()` improves README and each module doc via AI (with `[N/total]` progress log per module)
    - `writeDocs()` writes `README.md` and `docs/<module>.md` to the project directory
    - CLI skips the save prompt (docs are already on disk)
+   - Works with both local paths and remote repos (cloned repos are kept after analysis)
 
-6. **Auto-cleanup**: If the repo was cloned, `cloner.cleanup()` removes the temp directory. (Not applicable for md format, which rejects remote repos.)
+6. **Cleanup**: Only `.zip` extractions are cleaned up after processing. Cloned remote repositories are **kept** on disk so the user can navigate to the project directory and find the generated docs inside it.
 
 ---
 
@@ -116,12 +116,13 @@ CLI (explain)  or  POST /api/analyze { projectPath }
                 ▼
         AnalyzerService.analyze(projectPath, format)
                 |
-                +-- Is remote URL? ──Yes──► RepositoryCloner.clone(url)
+                +-- Is .zip? ──Yes──► RepositoryCloner.extractZip()
+                |                          (cleaned up after processing)
+                |
+                +-- Is remote URL? ──Yes──► RepositoryCloner.clone()
                 |                                   |
-                |                              repoPath
-                |                                   |
-                |                              (auto-cleaned in finally)
-                |                                   |
+                |                              repoPath (kept on disk)
+                |
                 +-- No (local path) ──► validatePath()
                 |                           validateRepositorySize()
                 |
@@ -163,6 +164,7 @@ CLI (explain)  or  POST /api/analyze { projectPath }
          |
          ▼
   README.md + docs/<module>.md written to disk
+  (project directory kept on disk for remote repos)
 ```
 
 ---
@@ -173,6 +175,7 @@ CLI (explain)  or  POST /api/analyze { projectPath }
 - **Dual output paths:** `txt` format produces an AI-enhanced narrative (or plain text fallback). `md` format writes `README.md` + `docs/*.md` directly to the project.
 - **AI is optional for markdown:** If `OLLAMA_MODEL` is not set, markdown docs are generated from the deterministic formatters without AI calls.
 - **Fallback on AI failure:** For `txt` format, if Ollama is unavailable or returns an error, the plain text is used as the summary.
-- **Automatic cleanup:** Cloned repositories are always removed after processing, even if an error occurs.
-- **Dual input mode:** Accepts both remote URLs and local paths transparently.
-- **Remote repos incompatible with markdown:** Since docs are written to the project directory, `md` format only works with local paths.
+- **Remote repos kept on disk:** Cloned repositories are not deleted after processing. The generated docs are written inside the cloned directory, and the CLI prints the path so the user can navigate there.
+- **Zip cleanup:** Only `.zip` extractions are cleaned up after processing (they're temporary by nature).
+- **Dual input mode:** Accepts remote URLs, local paths, and `.zip` files transparently.
+- **Markdown works everywhere:** Both local and remote repos can generate markdown docs.

@@ -67,6 +67,17 @@ There are three prompt files, chosen depending on the format and use case:
 
 **`promptMdEnhancer.js`** — instructs the model to improve existing Markdown without inventing information. Used by `enhanceMarkdown()` to polish README.md and module docs.
 
+### Markdown Enhancer Rules
+
+The `promptMdEnhancer.js` prompt includes strict rules to prevent the LLM from:
+- Inventing modules, functions, or features not in the original
+- Adding technology definitions (e.g., "Rust is known for memory safety")
+- Explaining what technologies do (the reader already knows them)
+- Restructuring tables (preserves column count, headers, and order)
+- Adding extra columns or rows to existing tables
+- Adding descriptive text like "This project uses..."
+- Adding recommendation or next-steps sections
+
 ---
 
 ## Flow
