@@ -54,8 +54,19 @@ function buildModules({ files, projectPath }) {
     if (!dirs[dir]) dirs[dir] = [];
     dirs[dir].push(file);
   }
+
+  const nameCount = {};
+  for (const dir of Object.keys(dirs)) {
+    const name = path.basename(dir);
+    nameCount[name] = (nameCount[name] || 0) + 1;
+  }
+
   return Object.entries(dirs).map(([dirPath, dirFiles]) => {
-    const name = path.basename(dirPath);
+    let name = path.basename(dirPath);
+    if (nameCount[name] > 1) {
+      const parent = path.basename(path.dirname(dirPath));
+      name = `${parent}-${name}`;
+    }
     const content = moduleFormatter({ name, files: dirFiles });
     return { name, content };
   });

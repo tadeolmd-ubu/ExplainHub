@@ -42,19 +42,6 @@ export class AnalyzerService {
     const generator = new TextGenerator();
 
     if (format === "md") {
-      const isRemote =
-        input.startsWith("http://") ||
-        input.startsWith("https://") ||
-        input.startsWith("git@") ||
-        input.startsWith("git://");
-
-      if (result && isRemote) {
-        return {
-          summary:
-            "Markdown docs only supported for local paths, not remote repos",
-        };
-      }
-
       const { readme, modules } = generator.generate({
         technologies,
         entryPoints,
@@ -97,20 +84,23 @@ export class AnalyzerService {
         readme: finalReadme,
         modules: finalModules,
       });
-      if (result) await cloner.cleanup(result.tempPath);
-      return { summary: `Document generated: ${written} files` };
+      return {
+        summary: `Document generated: ${written} files`,
+        repoPath: projectPath,
+      };
     }
 
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
       const summary = await enhancer.enhance(plainText, format);
-      return { summary };
+      return { summary, repoPath: projectPath };
     } catch (err) {
       console.error("AI Enhancer error:", err.message);
-      return { summary: plainText };
+      return { summary: plainText, repoPath: projectPath };
     } finally {
-      if (result) await cloner.cleanup(result.tempPath);
+      if (result && input.endsWith(".zip"))
+        await cloner.cleanup(result.tempPath);
     }
   }
 }
