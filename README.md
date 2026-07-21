@@ -167,6 +167,7 @@ The `CodeParser` can analyze the following file types:
 | `.c`, `.h` | C | `web-tree-sitter` (WASM) |
 | `.cpp`, `.cc`, `.cxx` | C++ | `web-tree-sitter` (WASM) |
 | `.rb`, `.rake`, `.gemspec` | Ruby | `web-tree-sitter` (WASM) |
+| `.ini`, `.cfg` | INI | `web-tree-sitter` (WASM) |
 | `.sln` | Solution | regex |
 | `.csproj` | C# Project | `fast-xml-parser` |
 | `.config` | Configuration | `fast-xml-parser` |
@@ -193,7 +194,6 @@ Languages we plan to add in future releases:
 | Language | Extension | Engine |
 |----------|-----------|--------|
 | PowerShell | `.ps1`, `.psm1` | `web-tree-sitter` (WASM) — grammar already bundled |
-| INI | `.ini`, `.cfg` | `web-tree-sitter` (WASM) — grammar already bundled |
 
 ---
 
@@ -205,8 +205,8 @@ Languages we plan to add in future releases:
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
 | php-parser | PHP AST parsing (pure JS, zero deps) |
-| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, and Ruby |
-| @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, etc.) |
+| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, and INI |
+| @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, INI, etc.) |
 | fast-xml-parser | XML parsing for .csproj, .config, .xaml |
 | smol-toml | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
 | python3 (ast module) | Python AST parsing via shell subprocess |
