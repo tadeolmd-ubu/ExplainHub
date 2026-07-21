@@ -32,4 +32,6 @@ export const fileTypes = {
   ".gemspec": "ruby",
   ".ini": "ini",
   ".cfg": "ini",
+  ".ps1": "powershell",
+  ".psm1": "powershell",
 };
