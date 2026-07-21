@@ -27,4 +27,7 @@ export const fileTypes = {
   ".cxx": "cpp",
   ".toml": "toml",
   ".lock": "lock",
+  ".rb": "ruby",
+  ".rake": "ruby",
+  ".gemspec": "ruby",
 };

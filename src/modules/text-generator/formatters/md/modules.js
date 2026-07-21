@@ -47,6 +47,7 @@ const FILES_TYPES = {
   go: "Go module",
   c: "C source file",
   cpp: "C++ source file",
+  ruby: "Ruby script/module",
 };
 
 function getFileTypeDesc(type) {

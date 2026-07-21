@@ -41,6 +41,7 @@ const parseableTypes = new Set([
   "cargolock",
   "rusttoolchain",
   "cargoconfig",
+  "ruby",
 ]);
 const parseableTypesOverride = new Map([
   ["Cargo.toml", "cargotoml"],
