@@ -9,6 +9,10 @@ export const techRules = {
     "index.html": "Frontend",
     "Cargo.toml": "Rust",
     "go.mod": "Go",
+    "Gemfile": "Ruby",
+    "Gemfile.lock": "Ruby",
+    "Rakefile": "Ruby",
+    "*.gemspec": "Ruby",
   },
 
   extensions: {
@@ -36,5 +40,8 @@ export const techRules = {
     ".cpp": "C++",
     ".cc": "C++",
     ".cxx": "C++",
+    ".rb": "Ruby",
+    ".rake": "Ruby",
+    ".gemspec": "Ruby",
   },
 };

@@ -148,6 +148,10 @@ export const techRules = {
     "index.html": "Frontend",
     "Cargo.toml": "Rust",
     "go.mod": "Go",
+    "Gemfile": "Ruby",
+    "Gemfile.lock": "Ruby",
+    "Rakefile": "Ruby",
+    "*.gemspec": "Ruby",
   },
   extensions: {
     ".js": "JavaScript",
@@ -174,6 +178,9 @@ export const techRules = {
     ".cpp": "C++",
     ".cc": "C++",
     ".cxx": "C++",
+    ".rb": "Ruby",
+    ".rake": "Ruby",
+    ".gemspec": "Ruby",
   },
 };
 ```
@@ -194,6 +201,7 @@ export const entryRules = {
   "C#": ["Program.cs", "Main.cs"],
   "C": ["main.c"],
   "C++": ["main.cpp"],
+  "Ruby": ["main.rb", "app.rb", "config.ru"],
 };
 ```
 

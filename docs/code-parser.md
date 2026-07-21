@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), and **Cargo project files** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.cargo/config.toml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, Cargo dependencies, build profiles, workspace structure, and more.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, **Ruby**, **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), and **Cargo project files** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.cargo/config.toml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, Cargo dependencies, build profiles, workspace structure, and more.
 
 **Location:** `src/modules/code-parser/`
 
@@ -39,6 +39,7 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/javaParser.js` | Java parser using `web-tree-sitter` + WASM grammar |
 | `parsers/goParser.js` | Go parser using `web-tree-sitter` + WASM grammar |
 | `parsers/cParser.js` | C/C++ parser using `web-tree-sitter` + WASM grammar (handles both C and C++) |
+| `parsers/rbParser.js` | Ruby parser using `web-tree-sitter` + WASM grammar |
 | `parsers/cargoTomlParser.js` | Cargo.toml parser using `smol-toml` (package metadata, deps, workspace, features, profiles, build targets, patches) |
 | `parsers/cargoLockParser.js` | Cargo.lock parser using `smol-toml` (resolved dependency tree with versions and checksums) |
 | `parsers/rustToolChainParser.js` | rust-toolchain.toml parser using `smol-toml` (toolchain channel, components, targets) |
@@ -404,6 +405,33 @@ Parses `.rs` files using `web-tree-sitter` with a prebuilt Rust WASM grammar (fr
 
 ---
 
+### Ruby Parser (`rbParser.js`)
+
+Parses `.rb` files using `web-tree-sitter` with a prebuilt Ruby WASM grammar (from `@vscode/tree-sitter-wasm`). Uses the same lazy singleton pattern as the C#, Rust, Java, Go, and C/C++ parsers.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `call` with `require`, `require_relative`, `load` | `source, alias, line` |
+| Functions | `method` (module-level, outside class/module) | `name, params[], line` |
+| Classes | `class` | `name, kind: "class", extends, methods[], line` |
+| Modules | `module` (with methods) | `name, kind: "module", methods[], line` |
+| Methods | `method` inside `class` or `module` | Attached to parent class/module |
+| Routes | `call` with `get`, `post`, `put`, `delete`, `patch`, `head`, `options` | `method, path, line` — Sinatra/Rack style |
+
+**Route detection:**
+- `get "/path"` → `GET /path`
+- `post "/path"` → `POST /path`
+- `put "/path"` → `PUT /path`
+- `delete "/path"` → `DELETE /path`
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+- WASM loading errors handled by the calling code
+
+---
+
 ### Cargo.toml Parser (`cargoTomlParser.js`)
 
 Parses `Cargo.toml` files using `smol-toml` (TOML v1.1.0 compliant, zero dependencies, ESM native). Extracts package metadata, dependencies, workspace configuration, feature flags, build profiles, build targets, patches, and platform-specific dependencies.
@@ -697,6 +725,7 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.go` | `go` | Yes | `web-tree-sitter` (WASM) |
 | `.c`, `.h` | `c` | Yes | `web-tree-sitter` (WASM) |
 | `.cpp`, `.hpp`, `.cc`, `.cxx` | `cpp` | Yes | `web-tree-sitter` (WASM) |
+| `.rb`, `.rake`, `.gemspec` | `ruby` | Yes | `web-tree-sitter` (WASM) |
 | `.sln` | `sln` | Yes | regex |
 | `.csproj` | `csproj` | Yes | `fast-xml-parser` |
 | `.config` | `config` | Yes | `fast-xml-parser` |
@@ -750,6 +779,7 @@ CodeParser.parse(tree, projectPath)
      |           +-- javaParser: web-tree-sitter → CST (recursive walk)
      |           +-- goParser: web-tree-sitter → CST (recursive walk)
      |           +-- cParser: web-tree-sitter → CST (recursive walk, handles both C and C++)
+     |           +-- rbParser: web-tree-sitter → CST (recursive walk)
      |           +-- slnParser: regex-based
     |           +-- csprojParser: fast-xml-parser → XML
     |           +-- configParser: fast-xml-parser → XML (auto-detect App.config vs packages.config)
@@ -774,8 +804,8 @@ CodeParser.parse(tree, projectPath)
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
-| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, and C/C++ parsing |
-| `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, Go, and C/C++ WASM grammars (VS Code sourced) |
+| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, C/C++, and Ruby parsing |
+| `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, Go, C/C++, and Ruby WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
 | `smol-toml` | npm | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
 | `execFile` | `node:child_process` | Spawn Python process (single batch per project) |
@@ -807,8 +837,8 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, Ruby, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
-- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, and `.cxx` files.
+- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx`, and `.rb` files.
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
 - **TOML project files:** Cargo parsers handle `Cargo.toml` (package metadata, dependencies, workspace, features, profiles, build targets, patches), `Cargo.lock` (resolved dependency tree), `rust-toolchain.toml` (toolchain config), and `.cargo/config.toml` (build config, registries, aliases). File type resolution uses filename-based overrides for files sharing the `.toml` extension.

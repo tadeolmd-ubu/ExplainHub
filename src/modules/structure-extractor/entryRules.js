@@ -8,4 +8,5 @@ export const entryRules = {
   "C#": ["Program.cs", "Main.cs"],
   "C": ["main.c"],
   "C++": ["main.cpp"],
+  "Ruby": ["main.rb", "app.rb", "config.ru"],
 };
