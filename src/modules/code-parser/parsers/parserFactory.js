@@ -18,6 +18,7 @@ import { parseCargoToml } from "./cargoTomlParser.js";
 import { parseCargoLock } from "./cargoLockParser.js";
 import { parseRustToolchain } from "./rustToolChainParser.js";
 import { parseCargoConfig } from "./cargoConfigParser.js";
+import { parseRb } from "./rbParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -41,6 +42,7 @@ const parsers = {
   cargolock: parseCargoLock,
   rusttoolchain: parseRustToolchain,
   cargoconfig: parseCargoConfig,
+  ruby: parseRb,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];
