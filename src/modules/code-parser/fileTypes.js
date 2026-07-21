@@ -30,4 +30,6 @@ export const fileTypes = {
   ".rb": "ruby",
   ".rake": "ruby",
   ".gemspec": "ruby",
+  ".ini": "ini",
+  ".cfg": "ini",
 };
