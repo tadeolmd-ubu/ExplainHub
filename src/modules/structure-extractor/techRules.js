@@ -45,5 +45,7 @@ export const techRules = {
     ".gemspec": "Ruby",
     ".ini": "INI",
     ".cfg": "INI",
+    ".ps1": "PowerShell",
+    ".psm1": "PowerShell",
   },
 };

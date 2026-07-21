@@ -20,6 +20,7 @@ import { parseRustToolchain } from "./rustToolChainParser.js";
 import { parseCargoConfig } from "./cargoConfigParser.js";
 import { parseRb } from "./rbParser.js";
 import { parseIni } from "./iniParser.js";
+import { parsePs1 } from "./ps1Parser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -45,6 +46,7 @@ const parsers = {
   cargoconfig: parseCargoConfig,
   ruby: parseRb,
   ini: parseIni,
+  powershell: parsePs1,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];

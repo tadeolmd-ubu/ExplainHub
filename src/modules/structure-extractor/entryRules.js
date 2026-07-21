@@ -9,4 +9,5 @@ export const entryRules = {
   "C": ["main.c"],
   "C++": ["main.cpp"],
   "Ruby": ["main.rb", "app.rb", "config.ru"],
+  "PowerShell": ["main.ps1"],
 };

@@ -18,7 +18,7 @@ RepositoryCloner      →  Clones repo / extracts .zip to temp directory
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
     ▼
-CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/.NET/Cargo
+CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/INI/.NET/Cargo
                          Extracts imports, exports, functions, classes, routes
     │
     ▼
@@ -42,7 +42,7 @@ Output                →  Console + optional save to .txt / README.md + docs/*
 |------|--------|-------------|
 | 1 | RepositoryCloner | Clones remote repos into `/temp` (kept on disk); extracts `.zip` files (cleaned up) |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `smol-toml`, and shell-to-`ast` |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/INI/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `smol-toml`, and shell-to-`ast` |
 | 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) with Project Info, Dependencies, Features sections |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
@@ -168,6 +168,7 @@ The `CodeParser` can analyze the following file types:
 | `.cpp`, `.cc`, `.cxx` | C++ | `web-tree-sitter` (WASM) |
 | `.rb`, `.rake`, `.gemspec` | Ruby | `web-tree-sitter` (WASM) |
 | `.ini`, `.cfg` | INI | `web-tree-sitter` (WASM) |
+| `.ps1`, `.psm1` | PowerShell | `web-tree-sitter` (WASM) |
 | `.sln` | Solution | regex |
 | `.csproj` | C# Project | `fast-xml-parser` |
 | `.config` | Configuration | `fast-xml-parser` |
@@ -191,9 +192,7 @@ When generating Markdown (`format: "md"`), the README includes additional sectio
 
 Languages we plan to add in future releases:
 
-| Language | Extension | Engine |
-|----------|-----------|--------|
-| PowerShell | `.ps1`, `.psm1` | `web-tree-sitter` (WASM) — grammar already bundled |
+_No languages pending — all planned languages have been implemented._
 
 ---
 
@@ -205,8 +204,8 @@ Languages we plan to add in future releases:
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
 | php-parser | PHP AST parsing (pure JS, zero deps) |
-| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, and INI |
-| @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, INI, etc.) |
+| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, and INI |
+| @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, etc.) |
 | fast-xml-parser | XML parsing for .csproj, .config, .xaml |
 | smol-toml | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
 | python3 (ast module) | Python AST parsing via shell subprocess |

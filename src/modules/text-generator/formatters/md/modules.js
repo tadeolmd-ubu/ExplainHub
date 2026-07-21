@@ -49,6 +49,7 @@ const FILES_TYPES = {
   cpp: "C++ source file",
   ruby: "Ruby script/module",
   ini: "INI configuration",
+  powershell: "PowerShell script/module",
 };
 
 function getFileTypeDesc(type) {
