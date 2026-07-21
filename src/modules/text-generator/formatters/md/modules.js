@@ -48,6 +48,7 @@ const FILES_TYPES = {
   c: "C source file",
   cpp: "C++ source file",
   ruby: "Ruby script/module",
+  ini: "INI configuration",
 };
 
 function getFileTypeDesc(type) {

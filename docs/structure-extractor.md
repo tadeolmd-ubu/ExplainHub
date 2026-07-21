@@ -181,6 +181,8 @@ export const techRules = {
     ".rb": "Ruby",
     ".rake": "Ruby",
     ".gemspec": "Ruby",
+    ".ini": "INI",
+    ".cfg": "INI",
   },
 };
 ```
