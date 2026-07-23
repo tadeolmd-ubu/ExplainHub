@@ -13,7 +13,7 @@ import path from "node:path";
 import { config } from "../../config/env.js";
 
 export class AnalyzerService {
-  async analyze(input, format = "txt") {
+  async analyze(input, format = "txt", language = "en") {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
@@ -58,7 +58,7 @@ export class AnalyzerService {
         const enhancer = new AiEnhancer();
         console.log("Mejorando README con IA...");
         try {
-          finalReadme = await enhancer.enhanceMarkdown(readme);
+          finalReadme = await enhancer.enhanceMarkdown(readme, language);
           console.log("✓ README mejorado");
         } catch (e) {
           console.error(e.message);
@@ -71,7 +71,7 @@ export class AnalyzerService {
           const mod = modules[i];
           console.log(`  [${i + 1}/${total}] Mejorando ${mod.name}...`);
           try {
-            const content = await enhancer.enhanceMarkdown(mod.content);
+            const content = await enhancer.enhanceMarkdown(mod.content, language);
             finalModules.push({ ...mod, content });
           } catch (e) {
             console.error(`  ✗ ${mod.name}: ${e.message}`);
@@ -93,7 +93,7 @@ export class AnalyzerService {
     const plainText = generator.generate({ technologies, entryPoints, files });
     try {
       const enhancer = new AiEnhancer();
-      const summary = await enhancer.enhance(plainText, format);
+      const summary = await enhancer.enhance(plainText, format, language);
       return { summary, repoPath: projectPath };
     } catch (err) {
       console.error("AI Enhancer error:", err.message);
