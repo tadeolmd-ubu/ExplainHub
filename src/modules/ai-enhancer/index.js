@@ -22,7 +22,11 @@ function cleanMarkdown(text) {
 
   return clean.join("\n").trim();
 }
-
+function stripCodeBlock(text) {
+  const trimmed = text.trim();
+  const match = trimmed.match(/^```(?:markdown|md)?\s*\n?([\s\S]*?)\n?\s*```$/);
+  return match ? match[1].trim() : trimmed;
+}
 export class AiEnhancer {
   constructor() {
     this.ollama = new Ollama({
@@ -43,7 +47,7 @@ export class AiEnhancer {
       chunks.push(part.response);
     }
     const result = chunks.join("");
-    return format === "md" ? result : cleanMarkdown(result);
+    return format === "md" ? stripCodeBlock(result) : cleanMarkdown(result);
   }
 
   async enhanceMarkdown(markdown) {
@@ -57,7 +61,7 @@ export class AiEnhancer {
     for await (const part of stream) {
       chunks.push(part.response);
     }
-    return chunks.join("");
+    const result = chunks.join("");
+    return stripCodeBlock(result);
   }
 }
-
