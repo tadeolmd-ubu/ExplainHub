@@ -63,6 +63,14 @@ async function main() {
     ],
   });
 
+  const lenguage = await c.select({
+    message: "¿En qué idioma quieres el informe?",
+    options: [
+      { value: "es", label: "Español" },
+      { value: "en", label: "English" },
+    ],
+  });
+
   if (c.isCancel(format)) {
     c.outro("Cancelado");
     process.exit(0);
@@ -92,7 +100,7 @@ async function main() {
     process.exit(0);
   }
 
-  const result = await service.analyze(projectPath, format);
+  const result = await service.analyze(projectPath, format, lenguage);
   c.outro("Análisis completado");
   console.log(result.summary);
   if (result.repoPath) {

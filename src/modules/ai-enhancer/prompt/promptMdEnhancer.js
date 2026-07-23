@@ -1,4 +1,7 @@
-export function buildMdEnhancer(markdown) {
+export function buildMdEnhancer(markdown, language = "en") {
+  const langInstruction =
+    language === "es" ? "Responde en español" : "Respond in English";
+
   return `Eres un experto en documentación técnica. Mejora el siguiente markdown de documentación de un proyecto de software.
 
 REGLAS ESTRICTAS:
@@ -14,7 +17,7 @@ REGLAS ESTRICTAS:
 - Si existe una sección de esquema de base de datos (Database Schema), presérvala completa con todas sus tablas, columnas y detalles
 - Solo mejora la redacción del texto que ya existe, legibilidad y formato
 - Mantén el formato markdown
-- Responde en español
+- ${langInstruction}
 
 Markdown original:
 ${markdown}
