@@ -62,8 +62,18 @@ async function main() {
       { value: "md", label: "Markdown" },
     ],
   });
-
   if (c.isCancel(format)) {
+    c.outro("Cancelado");
+    process.exit(0);
+  }
+  const language = await c.select({
+    message: "¿En qué idioma quieres el informe?",
+    options: [
+      { value: "es", label: "Español" },
+      { value: "en", label: "English" },
+    ],
+  });
+  if (c.isCancel(language)) {
     c.outro("Cancelado");
     process.exit(0);
   }
@@ -92,7 +102,7 @@ async function main() {
     process.exit(0);
   }
 
-  const result = await service.analyze(projectPath, format);
+  const result = await service.analyze(projectPath, format, language);
   c.outro("Análisis completado");
   console.log(result.summary);
   if (result.repoPath) {

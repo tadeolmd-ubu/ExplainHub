@@ -34,9 +34,9 @@ export class AiEnhancer {
     });
     this.model = process.env.OLLAMA_MODEL;
   }
-  async enhance(plainText, format = "txt") {
+  async enhance(plainText, format = "txt", language = "en") {
     const buildPrompt = format === "md" ? buildPromptMd : buildPromptTxt;
-    const rawPrompt = buildPrompt(plainText);
+    const rawPrompt = buildPrompt(plainText, language);
     const stream = await this.ollama.generate({
       model: this.model,
       prompt: rawPrompt,
@@ -50,8 +50,8 @@ export class AiEnhancer {
     return format === "md" ? stripCodeBlock(result) : cleanMarkdown(result);
   }
 
-  async enhanceMarkdown(markdown) {
-    const prompt = buildMdEnhancer(markdown);
+  async enhanceMarkdown(markdown, language = "en") {
+    const prompt = buildMdEnhancer(markdown, language);
     const stream = await this.ollama.generate({
       model: this.model,
       prompt,
