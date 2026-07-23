@@ -36,9 +36,12 @@ export class RepositoryCloner {
 
     await this.ensureBaseTempDirectory();
 
-    const cloneId = this.createCloneId(sanitizedRepositoryUrl);
-    const tempPath = path.join(this.baseTempDir, cloneId);
+    const cloneName = this.extractRepositoryName(sanitizedRepositoryUrl);
+    const tempPath = path.join(this.baseTempDir, cloneName);
     const repoPath = path.join(tempPath, "repository");
+    if (existsSync(tempPath)) {
+      await this.cleanup(tempPath);
+    }
 
     await fs.mkdir(tempPath, { recursive: true });
 
@@ -56,7 +59,7 @@ export class RepositoryCloner {
       repositoryUrl: sanitizedRepositoryUrl,
       tempPath,
       repoPath,
-      cloneId,
+      cloneName,
     };
 
     if (processCallback) {
@@ -118,19 +121,6 @@ export class RepositoryCloner {
    */
   async cleanup(targetPath) {
     await fs.rm(targetPath, { recursive: true, force: true });
-  }
-
-  /**
-   * Genera un identificador estable y legible para el clon.
-   *
-   * @param {string} repositoryUrl
-   * @returns {string}
-   */
-  createCloneId(repositoryUrl) {
-    const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
-    const repositoryName = this.extractRepositoryName(repositoryUrl);
-
-    return `${timestamp}-${repositoryName}`;
   }
 
   /**
@@ -203,9 +193,12 @@ export class RepositoryCloner {
   }
   async extractZip(zipPath) {
     await this.ensureBaseTempDirectory();
-    const extractId = this.createCloneId(zipPath);
-    const tempPath = path.join(this.baseTempDir, extractId);
+    const extractName = this.extractRepositoryName(zipPath);
+    const tempPath = path.join(this.baseTempDir, extractName);
     const repoPath = path.join(tempPath, "repository");
+    if (existsSync(tempPath)) {
+      await this.cleanup(tempPath);
+    }
 
     await fs.mkdir(tempPath, { recursive: true });
     try {
@@ -216,7 +209,7 @@ export class RepositoryCloner {
       throw new Error(`No se pudo extraer el zip: ${error.message}`);
     }
 
-    return { repositoryUrl: zipPath, tempPath, repoPath, cloneId: extractId };
+    return { repositoryUrl: zipPath, tempPath, repoPath, cloneName: extractName };
   }
 }
 
@@ -225,5 +218,5 @@ export class RepositoryCloner {
  * @property {string} repositoryUrl URL o ruta original normalizada.
  * @property {string} tempPath Carpeta contenedora creada dentro de /temp.
  * @property {string} repoPath Ruta final del repositorio clonado.
- * @property {string} cloneId Identificador unico del clon.
+ * @property {string} cloneNames Identificador unico del clon.
  */
