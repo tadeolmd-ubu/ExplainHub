@@ -50,7 +50,9 @@ function overviewSection(technologies, entryPoints) {
     entryPoints && Object.keys(entryPoints).length > 0
       ? "| Technology | File |\n|------------|------|\n" +
         Object.entries(entryPoints)
-          .flatMap(([tech, files]) => files.map((f) => `| ${tech} | ${f} |`))
+          .flatMap(([tech, files]) =>
+            files.map((f) => `| ${tech} | ${path.basename(f)} |`),
+          )
           .join("\n")
       : "";
   if (!techs && !entries) return null;
@@ -66,7 +68,8 @@ function projectInfoSection(files, projectPath) {
     if (pkg.edition) rows.push(`| Edition | ${pkg.edition} |`);
     if (pkg.description) rows.push(`| Description | ${pkg.description} |`);
     if (pkg.license) rows.push(`| License | ${pkg.license} |`);
-    if (pkg.authors?.length) rows.push(`| Authors | ${pkg.authors.join(", ")} |`);
+    if (pkg.authors?.length)
+      rows.push(`| Authors | ${pkg.authors.join(", ")} |`);
     if (pkg.repository) rows.push(`| Repository | ${pkg.repository} |`);
     if (pkg.rustVersion) rows.push(`| Rust Version | ${pkg.rustVersion} |`);
     if (rows.length === 0) return null;
@@ -84,7 +87,8 @@ function projectInfoSection(files, projectPath) {
       if (pkg.license) rows.push(`| License | ${pkg.license} |`);
       if (pkg.author) rows.push(`| Author | ${pkg.author} |`);
       if (pkg.homepage) rows.push(`| Homepage | ${pkg.homepage} |`);
-      if (pkg.repository?.url) rows.push(`| Repository | ${pkg.repository.url} |`);
+      if (pkg.repository?.url)
+        rows.push(`| Repository | ${pkg.repository.url} |`);
       if (rows.length === 0) return null;
       return `## Project Info\n\n| Field | Value |\n|-------|-------|\n${rows.join("\n")}`;
     } catch {}
@@ -132,7 +136,9 @@ function dependenciesSection(files, projectPath) {
 }
 
 function featuresSection(files) {
-  const cargoFile = files.find((f) => f.features && Object.keys(f.features).length > 0);
+  const cargoFile = files.find(
+    (f) => f.features && Object.keys(f.features).length > 0,
+  );
   if (!cargoFile) return null;
   const rows = [];
   for (const [name, implies] of Object.entries(cargoFile.features)) {
@@ -195,19 +201,16 @@ function modulesSection(files, projectPath) {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([dir, info]) => {
       const name = path.basename(dir);
-      const relPath = projectPath
-        ? path.relative(projectPath, dir)
-        : dir;
       let linkName = name;
       if (nameCount[name] > 1) {
         const parent = path.basename(path.dirname(dir));
         linkName = `${parent}-${name}`;
       }
       const link = `docs/${linkName}.md`;
-      return `| [${name}](${link}) | \`${relPath}\` | ${info.files} |`;
+      return `| [${name}](${link}) | ${info.files} |`;
     });
   if (rows.length === 0) return null;
-  return `## Modules\n\n| Module | Path | Files |\n|--------|------|-------|\n${rows.join("\n")}`;
+  return `## Modules\n\n| Module | Files |\n|--------|------|\n${rows.join("\n")}`;
 }
 
 function apiSection(files) {

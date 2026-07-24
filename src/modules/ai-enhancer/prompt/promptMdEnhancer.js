@@ -13,6 +13,7 @@ REGLAS ESTRICTAS:
 - NO expliques para qué sirve cada tecnología. El lector ya las conoce
 - NO reestructures tablas: preserva el mismo número de columnas, los mismos encabezados y el mismo orden de filas
 - NO agregues columnas ni filas extra a tablas existentes
+- NO incluyas rutas absolutas ni relativas de archivos o carpetas. Usa solo nombres de archivos.
 - NO agregues texto descriptivo sobre el proyecto como "Este proyecto utiliza..." o "El proyecto está construido con..."
 - Si existe una sección de esquema de base de datos (Database Schema), presérvala completa con todas sus tablas, columnas y detalles
 - Solo mejora la redacción del texto que ya existe, legibilidad y formato
