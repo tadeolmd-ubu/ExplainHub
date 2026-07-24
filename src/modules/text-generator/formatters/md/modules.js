@@ -1,5 +1,21 @@
 import path from "node:path";
 
+const METADATA_KEYS = new Set([
+  "filePath",
+  "type",
+  "package",
+  "dependencies",
+  "features",
+]);
+
+function isEmptyFile(file) {
+  return Object.keys(file)
+    .filter((key) => !METADATA_KEYS.has(key))
+    .every((key) => {
+      const val = file[key];
+      return !val || (Array.isArray(val) && val.length === 0);
+    });
+}
 export function moduleFormatter({ name, files }) {
   const sections = [
     `# Module: ${name}\n`,
@@ -23,9 +39,12 @@ function getCommonPath(files) {
 }
 
 function fileStructureSection(files) {
-  const rows = files.map(
-    (f) => `| \`${path.basename(f.filePath)}\` | ${getFileTypeDesc(f.type)} |`,
-  );
+  const rows = files.map((f) => {
+    const purpose = isEmptyFile(f)
+      ? "Pendiente de implementar"
+      : getFileTypeDesc(f.type);
+    return `| \`${path.basename(f.filePath)}\` | ${purpose} |`;
+  });
   return `## File Structure\n\n| File | Purpose |\n|------|---------|\n${rows.join("\n")}`;
 }
 
