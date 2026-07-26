@@ -185,6 +185,10 @@ export class RepositoryCloner {
       return true;
     }
 
+    if (/^[\w.-]+@[\w.-]+:/.test(repositoryUrl)) {
+      return false;
+    }
+
     if (repositoryUrl.includes("/") || repositoryUrl.includes("\\")) {
       return true;
     }
@@ -209,7 +213,12 @@ export class RepositoryCloner {
       throw new Error(`No se pudo extraer el zip: ${error.message}`);
     }
 
-    return { repositoryUrl: zipPath, tempPath, repoPath, cloneName: extractName };
+    return {
+      repositoryUrl: zipPath,
+      tempPath,
+      repoPath,
+      cloneName: extractName,
+    };
   }
 }
 

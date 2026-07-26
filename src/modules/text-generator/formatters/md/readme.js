@@ -25,19 +25,10 @@ export function readmeFormatter({
 }
 
 function getProjectName(projectPath) {
-  try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
-    );
-    return pkg.name || path.basename(projectPath);
-  } catch {
-    const parentName = path.basename(path.dirname(projectPath));
-    const stripped = parentName.replace(
-      /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-/,
-      "",
-    );
-    return stripped || path.basename(projectPath);
-  }
+  const dirName = path.basename(projectPath);
+  if (dirName && dirName !== "repository") return dirName;
+  const parentName = path.basename(path.dirname(projectPath));
+  return parentName || "project";
 }
 
 function overviewSection(technologies, entryPoints) {
