@@ -19,7 +19,6 @@ function isEmptyFile(file) {
 export function moduleFormatter({ name, files }) {
   const sections = [
     `# Module: ${name}\n`,
-    `**Location:** \`${getCommonPath(files)}\`\n`,
     fileStructureSection(files),
     functionsSection(files),
     classesSection(files),

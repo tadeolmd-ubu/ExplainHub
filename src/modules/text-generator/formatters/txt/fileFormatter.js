@@ -1,3 +1,5 @@
+import path from "node:path";
+
 const METADATA_KEYS = new Set([
   "filePath", "type", "package", "dependencies", "features",
 ]);
@@ -13,7 +15,7 @@ function isEmptyFile(file) {
 
 export function fileFormatter(file) {
   if (isEmptyFile(file)) {
-     return `-- ${file.filePath} (${file.type}) --\nPendiente de implementar`;
+    return `-- ${path.basename(file.filePath)} (${file.type}) --\nPendiente de implementar`;
   }
   const {
     filePath, type, imports, exports, functions, classes, routes,
@@ -22,7 +24,7 @@ export function fileFormatter(file) {
   } = file;
 
   const lines = [
-    `-- ${filePath} (${type}) --`,
+    `-- ${path.basename(filePath)} (${type}) --`,
     fmtLabel("Imports", fmtImports(imports)),
     fmtLabel("Exports", fmtExports(exports)),
     fmtLabel("Functions", fmtFunctions(functions)),

@@ -10,6 +10,7 @@ export function buildPromptTxt(plainText, language = "en") {
 5. NÚCLEO DEL PROYECTO - Archivos más importados, por dónde empezar a leer
 6. SEGURIDAD - Prácticas observadas o faltantes
 7. RECOMENDACIONES - Sugerencias para empezar a desarrollar
+8. NO incluyas rutas de archivos o carpetas del proyecto. Usa solo nombres de archivos.
 ${langInstruction} Usa SOLO texto plano. NO uses markdown, negritas, tablas ni enlaces. Separa las secciones con líneas de guiones (----).
 Análisis técnico:
 ${plainText}
