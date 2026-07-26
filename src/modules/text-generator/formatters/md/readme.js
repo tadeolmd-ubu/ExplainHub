@@ -12,6 +12,7 @@ export function readmeFormatter({
   const sections = [
     `# ${projectName}\n`,
     overviewSection(technologies, entryPoints),
+    getStartedSection(technologies, projectPath),
     projectInfoSection(files, projectPath),
     dependenciesSection(files, projectPath),
     featuresSection(files),
@@ -230,4 +231,36 @@ function schemaSection(files) {
   if (items.length === 0) return null;
   const rows = items.map((i) => `| ${i.type} | ${i.name} | ${i.detail} |`);
   return `## Database Schema\n\n| Type | Name | Details |\n|------|------|---------|\n${rows.join("\n")}`;
+}
+function getStartedSection(technologies, projectPath) {
+  if (!technologies?.length) return null;
+  const name = path.basename(projectPath || ".");
+  const cmds = [];
+
+  if (technologies.includes("node") || technologies.includes("npm")) {
+    cmds.push("npm install");
+    cmds.push("npm start");
+  } else if (technologies.includes("rust")) {
+    cmds.push("cargo build");
+    cmds.push("cargo run");
+  } else if (technologies.includes("python")) {
+    cmds.push("pip install -r requirements.txt");
+    cmds.push("python main.py");
+  } else if (technologies.includes("go")) {
+    cmds.push("go mod download");
+    cmds.push("go run .");
+  } else if (technologies.includes("java")) {
+    cmds.push("mvn install");
+    cmds.push("mvn spring-boot:run");
+  } else if (technologies.includes("php")) {
+    cmds.push("composer install");
+    cmds.push("php -S localhost:8000");
+  } else if (technologies.includes("ruby")) {
+    cmds.push("bundle install");
+    cmds.push("ruby app.rb");
+  } else {
+    return null;
+  }
+  const lines = cmds.map((cmd) => `\`${cmd}\``).join(" → ");
+  return `## Get Started\n\n\`\`\`bash\ncd ${name}\n${cmds.join("\n")}\n\`\`\``;
 }
