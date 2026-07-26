@@ -105,8 +105,29 @@ function exportsSection(files) {
     (f.exports || []).map((e) => ({ ...e, file: path.basename(f.filePath) })),
   );
   if (exports.length === 0) return null;
-  const rows = exports.map((e) => `| ${e.name} | ${e.kind} | \`${e.file}\` |`);
-  return `## Exports\n\n| Name | Kind | File |\n|------|------|------|\n${rows.join("\n")}`;
+
+  const cssVars = exports.filter((e) => e.kind === "css-variable");
+  const otherExports = exports.filter((e) => e.kind !== "css-variable");
+
+  const sections = [];
+
+  if (otherExports.length > 0) {
+    const rows = otherExports.map(
+      (e) => `| ${e.name} | ${e.kind} | \`${e.file}\` |`,
+    );
+    sections.push(
+      `## Exports\n\n| Name | Kind | File |\n|------|------|------|\n${rows.join("\n")}`,
+    );
+  }
+
+  if (cssVars.length > 0) {
+    const rows = cssVars.map((e) => `| --${e.name} | \`${e.file}\` |`);
+    sections.push(
+      `## CSS Variables\n\n| Variable | File |\n|----------|------|\n${rows.join("\n")}`,
+    );
+  }
+
+  return sections.join("\n\n");
 }
 
 function routesSection(files) {

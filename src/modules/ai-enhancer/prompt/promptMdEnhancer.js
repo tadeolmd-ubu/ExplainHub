@@ -16,8 +16,9 @@ REGLAS ESTRICTAS:
 - Si existe una sección de esquema de base de datos (Database Schema), presérvala completa con todas sus tablas, columnas y detalles
 - Solo mejora la redacción del texto que ya existe, legibilidad y formato
 - Mantén el formato markdown
-- Agrega una columna "Description" a la tabla File Structure con una frase corta (10-15 palabras) que explique qué hace cada archivo, basándote en sus imports, exports, functions y classes
+- En la tabla File Structure, agrega una descripción corta (10-15 palabras) a la columna Purpose existente, separada con un guion largo (—). Ejemplo: "PHP module — Maneja autenticación de usuarios con JWT"
 - Debajo del título de cada sección de módulo (Module: xxx), agrega una descripción de 1-2 oraciones sobre la responsabilidad de ese módulo
+- En la tabla Exports, elimina filas duplicadas (mismo nombre + mismo kind + mismo archivo). Si una variable aparece repetida múltiples veces, muestra solo una entrada
 - Para cada archivo vacío (Pendiente de implementar), escribe "Archivo sin implementar — pendiente de definir responsabilidad"
 - ${langInstruction}
 
