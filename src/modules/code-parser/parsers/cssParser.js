@@ -1,4 +1,3 @@
-
 export function parseCss(content) {
   const classes = [...content.matchAll(/\.([a-zA-Z0-9_-]+)\s*\{/g)].map(
     (m) => m[1],
@@ -14,12 +13,16 @@ export function parseCss(content) {
   ].map((m) => m[1]);
   return {
     imports,
-    exports: [...classes, ...animations].map((name) => ({
-      name,
-      kind: "class",
-    })),
-    functions: variables.map((v) => ({ name: v, kind: "css-variable" })),
-    classes: [],
+    exports: [
+      ...[...new Set([...classes, ...animations])].map((name) => ({
+        name,
+        kind: "class",
+      })),
+      ...[...new Set(variables)].map((name) => ({
+        name,
+        kind: "css-variable",
+      })),
+    ],
     routes: [],
   };
 }
