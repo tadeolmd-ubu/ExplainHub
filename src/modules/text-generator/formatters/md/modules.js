@@ -109,10 +109,18 @@ function exportsSection(files) {
   const cssVars = exports.filter((e) => e.kind === "css-variable");
   const otherExports = exports.filter((e) => e.kind !== "css-variable");
 
+  const uniqueExports = [];
+  const seen = new Set();
+  for (const e of otherExports) {
+    const key = `${e.name}|${e.kind}|${e.file}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueExports.push(e);
+    }
+  }
   const sections = [];
-
-  if (otherExports.length > 0) {
-    const rows = otherExports.map(
+  if (uniqueExports.length > 0) {
+    const rows = uniqueExports.map(
       (e) => `| ${e.name} | ${e.kind} | \`${e.file}\` |`,
     );
     sections.push(

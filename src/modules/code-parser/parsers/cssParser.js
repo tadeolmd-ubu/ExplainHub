@@ -13,14 +13,16 @@ export function parseCss(content) {
   ].map((m) => m[1]);
   return {
     imports,
-    exports: [...classes, ...animations].map((name) => ({
-      name,
-      kind: "class",
-    })),
-    exports: [...classes, ...animations, ...variables].map((name) => ({
-      name,
-      kind: variables.includes(name) ? "css-variable" : "class",
-    })),
+    exports: [
+      ...[...new Set([...classes, ...animations])].map((name) => ({
+        name,
+        kind: "class",
+      })),
+      ...[...new Set(variables)].map((name) => ({
+        name,
+        kind: "css-variable",
+      })),
+    ],
     routes: [],
   };
 }

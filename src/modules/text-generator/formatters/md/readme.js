@@ -16,7 +16,7 @@ export function readmeFormatter({
     projectInfoSection(files, projectPath),
     dependenciesSection(files, projectPath),
     featuresSection(files),
-    structureSection(tree),
+    structureSection(tree, projectName),
     modulesSection(files, projectPath),
     apiSection(files),
     schemaSection(files),
@@ -140,11 +140,11 @@ function featuresSection(files) {
   return `## Features\n\n| Name | Implies |\n|------|--------|\n${rows.join("\n")}`;
 }
 
-function structureSection(tree) {
+function structureSection(tree, projectName) {
   if (!tree) return null;
   const lines = [];
   renderTree(tree, lines, "");
-  return `## Project Structure\n\n\`\`\`\n${tree.name}/\n${lines.join("\n")}\`\`\``;
+  return `## Project Structure\n\n\`\`\`\n${projectName}/\n${lines.join("\n")}\`\`\``;
 }
 
 function renderTree(node, lines, prefix) {
