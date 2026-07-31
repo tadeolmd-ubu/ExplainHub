@@ -144,7 +144,7 @@ function structureSection(tree, projectName) {
   if (!tree) return null;
   const lines = [];
   renderTree(tree, lines, "");
-  return `## Project Structure\n\n\`\`\`\n${projectName}/\n${lines.join("\n")}\`\`\``;
+  return `## Project Structure\n\n\`\`\`\n${projectName}/\n${lines.join("\n")}\n\`\`\``;
 }
 
 function renderTree(node, lines, prefix) {
@@ -179,8 +179,9 @@ function modulesSection(files, projectPath) {
   for (const file of files) {
     const dir = path.dirname(file.filePath);
     if (projectPath && dir === projectPath) continue;
-    if (!dirs[dir]) dirs[dir] = { files: 0 };
+    if (!dirs[dir]) dirs[dir] = { files: 0, types: new Set() };
     dirs[dir].files++;
+    if (file.type) dirs[dir].types.add(file.type);
   }
 
   const nameCount = {};
@@ -199,10 +200,28 @@ function modulesSection(files, projectPath) {
         linkName = `${parent}-${name}`;
       }
       const link = `docs/${linkName}.md`;
-      return `| [${name}](${link}) | ${info.files} |`;
+      return `| [${name}](${link}) | ${info.files} | ${moduleDescription(info.types)} |`;
     });
   if (rows.length === 0) return null;
-  return `## Modules\n\n| Module | Files |\n|--------|------|\n${rows.join("\n")}`;
+  return `## Modules\n\n| Module | Files | Description |\n|--------|-------|-------------|\n${rows.join("\n")}`;
+}
+
+function moduleDescription(types) {
+  const parts = [];
+  if (types.has("sql")) parts.push("SQL scripts");
+  if (types.has("javascript") || types.has("typescript"))
+    parts.push("JavaScript");
+  if (types.has("php")) parts.push("PHP");
+  if (types.has("python")) parts.push("Python");
+  if (types.has("ruby")) parts.push("Ruby");
+  if (types.has("stylesheet")) parts.push("CSS");
+  if (types.has("markup")) parts.push("HTML");
+  if (types.has("rust")) parts.push("Rust");
+  if (types.has("java")) parts.push("Java");
+  if (types.has("go")) parts.push("Go");
+  if (types.has("csharp")) parts.push("C#");
+  if (types.has("config")) parts.push("Configuration");
+  return parts.length > 0 ? parts.join(", ") : "-";
 }
 
 function apiSection(files) {

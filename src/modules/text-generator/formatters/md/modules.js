@@ -19,6 +19,7 @@ function isEmptyFile(file) {
 export function moduleFormatter({ name, files }) {
   const sections = [
     `# Module: ${name}\n`,
+    moduleDescription(files),
     fileStructureSection(files),
     functionsSection(files),
     classesSection(files),
@@ -28,6 +29,28 @@ export function moduleFormatter({ name, files }) {
   ].filter(Boolean);
 
   return sections.join("\n\n");
+}
+
+function moduleDescription(files) {
+  const types = new Set(files.map((f) => f.type).filter(Boolean));
+  const total = files.length;
+  const parts = [];
+  if (types.has("sql"))
+    parts.push("SQL scripts and database objects");
+  if (types.has("javascript") || types.has("typescript"))
+    parts.push("JavaScript application logic");
+  if (types.has("php")) parts.push("PHP application logic");
+  if (types.has("python")) parts.push("Python application logic");
+  if (types.has("ruby")) parts.push("Ruby application logic");
+  if (types.has("stylesheet")) parts.push("CSS styles");
+  if (types.has("markup")) parts.push("HTML templates");
+  if (types.has("rust")) parts.push("Rust modules");
+  if (types.has("java")) parts.push("Java modules");
+  if (types.has("go")) parts.push("Go modules");
+  if (types.has("csharp")) parts.push("C# modules");
+  if (types.has("config")) parts.push("Configuration files");
+  if (parts.length === 0) return null;
+  return `This module contains ${parts.join(" and ")} (${total} file${total === 1 ? "" : "s"}).`;
 }
 
 function getCommonPath(files) {
@@ -41,7 +64,7 @@ function fileStructureSection(files) {
   const rows = files.map((f) => {
     const purpose = isEmptyFile(f)
       ? "Pendiente de implementar"
-      : getFileTypeDesc(f.type);
+      : getFileTypeDesc(f.type, f.filePath);
     return `| \`${path.basename(f.filePath)}\` | ${purpose} |`;
   });
   return `## File Structure\n\n| File | Purpose |\n|------|---------|\n${rows.join("\n")}`;
@@ -70,8 +93,100 @@ const FILES_TYPES = {
   powershell: "PowerShell script/module",
 };
 
-function getFileTypeDesc(type) {
-  return FILES_TYPES[type] || type;
+function getFileTypeDesc(type, filePath) {
+  const base = FILES_TYPES[type] || type;
+  const name = path.basename(filePath).toLowerCase();
+
+  if (type === "sql") {
+    if (name.includes("schema") || name.includes("create") || name.includes("init"))
+      return "Database schema initialization";
+    if (name.includes("seed") || name.includes("data"))
+      return "Seed data for initial population";
+    if (name.includes("migrat"))
+      return "Database migration script";
+    if (name.includes("drop") || name.includes("delete") || name.includes("destroy"))
+      return "Database cleanup script";
+    if (name.includes("backup") || name.includes("export"))
+      return "Database backup script";
+    if (name.includes("view") || name.includes("v_"))
+      return "Database view definition";
+    if (name.includes("procedure") || name.includes("sp_") || name.includes("fn_"))
+      return "Stored procedure definition";
+    return "SQL script for database operations";
+  }
+  if (type === "javascript" || type === "typescript") {
+    if (name.includes("config") || name.includes("settings"))
+      return "Application configuration";
+    if (name.includes("route") || name.includes("router"))
+      return "Route definitions";
+    if (name.includes("middleware"))
+      return "Request middleware handlers";
+    if (name.includes("controller"))
+      return "Request handlers and business logic";
+    if (name.includes("model") || name.includes("schema"))
+      return "Data models and validation";
+    if (name.includes("service"))
+      return "Service layer business logic";
+    if (name.includes("util") || name.includes("helper"))
+      return "Utility functions and helpers";
+    if (name.includes("test") || name.includes("spec"))
+      return "Unit and integration tests";
+    if (name.includes("index"))
+      return "Module entry point";
+    if (name.includes("server") || name.includes("app") || name.includes("main"))
+      return "Application entry point";
+    return base;
+  }
+  if (type === "php") {
+    if (name.includes("config") || name.includes("settings"))
+      return "Application configuration";
+    if (name.includes("route") || name.includes("router"))
+      return "Route definitions";
+    if (name.includes("controller"))
+      return "Request handlers and business logic";
+    if (name.includes("model"))
+      return "Data models and validation";
+    if (name.includes("migration"))
+      return "Database migration script";
+    if (name.includes("middleware"))
+      return "Request middleware handlers";
+    if (name.includes("test") || name.includes("spec"))
+      return "Unit and integration tests";
+    if (
+      name.includes("login") ||
+      name.includes("logout") ||
+      name.includes("auth") ||
+      name.includes("register") ||
+      name.includes("sesion") ||
+      name.includes("session")
+    )
+      return "User authentication and session handling";
+    if (name.includes("admin") || name.includes("panel"))
+      return "Administration panel views and logic";
+    if (name.includes("dashboard"))
+      return "Main dashboard view";
+    if (name.includes("conexion") || name.includes("connection") || name.includes("database") || name.includes("db"))
+      return "Database connection handling";
+    if (name.includes("inscripcion") || name.includes("enroll") || name.includes("inscription"))
+      return "Membership enrollment form handling";
+    if (name.includes("membresia") || name.includes("membership"))
+      return "Membership management logic";
+    return base;
+  }
+  if (type === "stylesheet") {
+    if (name.includes("variables") || name.includes("tokens"))
+      return "Design tokens and CSS variables";
+    if (name.includes("reset") || name.includes("normalize"))
+      return "CSS reset and normalization";
+    if (name.includes("layout"))
+      return "Layout and grid styles";
+    if (name.includes("component") || name.includes("widget"))
+      return "Component-specific styles";
+    if (name.includes("responsive") || name.includes("media"))
+      return "Responsive design breakpoints";
+    return base;
+  }
+  return base;
 }
 
 function functionsSection(files) {
