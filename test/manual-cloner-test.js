@@ -58,7 +58,7 @@ test("should generate plain text with sections (header,stats, etc...)", async ()
 
 //==========CLONER==========//
 //==========NEED OLLAMA==========//
-test("should return a string whith the recap of the project", async () => {
+test("should return a string whith the recap of the project", { skip: !process.env.OLLAMA_MODEL }, async () => {
   const textGenerator = new TextGenerator();
   const structureExtractor = new StructureExtractor();
   const codeParser = new CodeParser();
@@ -94,7 +94,7 @@ test("should return /docs with the modules of the app in format md", async () =>
   assert.ok(modules.length > 0);
 });
 
-test("Should return a txt and sumary string of the project", async () => {
+test("Should return a txt and sumary string of the project", { skip: !process.env.OLLAMA_MODEL }, async () => {
   const analyzer = new AnalyzerService();
 
   const result = await analyzer.analyze(".", "txt");
