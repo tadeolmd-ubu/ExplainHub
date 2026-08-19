@@ -27,11 +27,8 @@ async function run() {
   const plainText = generator.generate({ technologies, entryPoints, files });
 
   const enhancer = new AiEnhancer();
-  const stream = await enhancer.enhance(plainText);
-
-  for await (const part of stream) {
-    process.stdout.write(part.response);
-  }
+  const result = await enhancer.enhance(plainText);
+  console.log(result);
 }
 
 run().catch((error) => {
