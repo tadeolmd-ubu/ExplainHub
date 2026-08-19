@@ -17,6 +17,7 @@ export class AnalyzerService {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
+
     if (input.endsWith(".zip")) {
       result = await cloner.extractZip(input);
       projectPath = result.repoPath;
@@ -31,73 +32,86 @@ export class AnalyzerService {
     } else {
       const { safe, reason } = validatePath(input);
       if (!safe) throw new Error(reason);
+    }
+
+    if (result) {
       const sizeResult = await validateRepositorySize(projectPath);
       if (!sizeResult.safe) throw new Error(sizeResult.reason);
     }
-    const extractor = new StructureExtractor();
-    const { tree, technologies, entryPoints } =
-      await extractor.extract(projectPath);
-    const parser = new CodeParser();
-    const files = await parser.parse(tree, projectPath);
-    const generator = new TextGenerator();
 
-    if (format === "md") {
-      const { readme, modules } = generator.generate({
+    try {
+      const extractor = new StructureExtractor();
+      const { tree, technologies, entryPoints } =
+        await extractor.extract(projectPath);
+      const parser = new CodeParser();
+      const files = await parser.parse(tree, projectPath);
+      const generator = new TextGenerator();
+
+      if (format === "md") {
+        const { readme, modules } = generator.generate({
+          technologies,
+          entryPoints,
+          files,
+          tree,
+          projectPath,
+          format: "md",
+        });
+
+        let finalReadme = readme;
+        let finalModules = modules;
+
+        if (config.ollama.model) {
+          const enhancer = new AiEnhancer();
+          console.log("Mejorando README con IA...");
+          try {
+            finalReadme = await enhancer.enhanceMarkdown(readme, language);
+            console.log("✓ README mejorado");
+          } catch (e) {
+            console.error(e.message);
+            finalReadme = readme;
+          }
+          finalModules = [];
+
+          const total = modules.length;
+          for (let i = 0; i < total; i++) {
+            const mod = modules[i];
+            console.log(`  [${i + 1}/${total}] Mejorando ${mod.name}...`);
+            try {
+              const content = await enhancer.enhanceMarkdown(
+                mod.content,
+                language,
+              );
+              finalModules.push({ ...mod, content });
+            } catch (e) {
+              console.error(`  ✗ ${mod.name}: ${e.message}`);
+              finalModules.push({ ...mod, content: mod.content });
+            }
+          }
+        }
+        const written = await writeDocs({
+          projectPath,
+          readme: finalReadme,
+          modules: finalModules,
+        });
+        return {
+          summary: `Document generated: ${written} files`,
+          repoPath: projectPath,
+        };
+      }
+
+      const plainText = generator.generate({
         technologies,
         entryPoints,
         files,
-        tree,
-        projectPath,
-        format: "md",
       });
-
-      let finalReadme = readme;
-      let finalModules = modules;
-
-      if (config.ollama.model) {
+      try {
         const enhancer = new AiEnhancer();
-        console.log("Mejorando README con IA...");
-        try {
-          finalReadme = await enhancer.enhanceMarkdown(readme, language);
-          console.log("✓ README mejorado");
-        } catch (e) {
-          console.error(e.message);
-          finalReadme = readme;
-        }
-        finalModules = [];
-
-        const total = modules.length;
-        for (let i = 0; i < total; i++) {
-          const mod = modules[i];
-          console.log(`  [${i + 1}/${total}] Mejorando ${mod.name}...`);
-          try {
-            const content = await enhancer.enhanceMarkdown(mod.content, language);
-            finalModules.push({ ...mod, content });
-          } catch (e) {
-            console.error(`  ✗ ${mod.name}: ${e.message}`);
-            finalModules.push({ ...mod, content: mod.content });
-          }
-        }
+        const summary = await enhancer.enhance(plainText, format, language);
+        return { summary, repoPath: projectPath };
+      } catch (err) {
+        console.error("AI Enhancer error:", err.message);
+        return { summary: plainText, repoPath: projectPath };
       }
-      const written = await writeDocs({
-        projectPath,
-        readme: finalReadme,
-        modules: finalModules,
-      });
-      return {
-        summary: `Document generated: ${written} files`,
-        repoPath: projectPath,
-      };
-    }
-
-    const plainText = generator.generate({ technologies, entryPoints, files });
-    try {
-      const enhancer = new AiEnhancer();
-      const summary = await enhancer.enhance(plainText, format, language);
-      return { summary, repoPath: projectPath };
-    } catch (err) {
-      console.error("AI Enhancer error:", err.message);
-      return { summary: plainText, repoPath: projectPath };
     } finally {
       if (result && input.endsWith(".zip"))
         await cloner.cleanup(result.tempPath);
