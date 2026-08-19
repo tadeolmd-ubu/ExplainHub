@@ -5,6 +5,11 @@ import { TextGenerator } from "../src/modules/text-generator/index.js";
 import { AiEnhancer } from "../src/modules/ai-enhancer/index.js";
 
 async function run() {
+  if (!process.env.OLLAMA_MODEL) {
+    console.log("Skipping: OLLAMA_MODEL not set");
+    return;
+  }
+
   const projectPath = process.argv[2] || process.cwd();
 
   console.log("Project path:", projectPath);
