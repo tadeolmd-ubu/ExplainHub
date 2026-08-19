@@ -25,7 +25,7 @@ function fmtAlter(file) {
           return str;
         })
         .join(", ");
-      return `${file.filePath}\n  ${a.tableName}: ${ops}`;
+      return `${file.filePath}\n  ${a.table}: ${ops}`;
     })
     .join("\n");
 }
