@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { buildNameCount } from "../utils.js";
 
 export function readmeFormatter({
   technologies,
@@ -184,11 +185,7 @@ function modulesSection(files, projectPath) {
     if (file.type) dirs[dir].types.add(file.type);
   }
 
-  const nameCount = {};
-  for (const dir of Object.keys(dirs)) {
-    const name = path.basename(dir);
-    nameCount[name] = (nameCount[name] || 0) + 1;
-  }
+  const nameCount = buildNameCount(dirs);
 
   const rows = Object.entries(dirs)
     .sort((a, b) => a[0].localeCompare(b[0]))

@@ -1,14 +1,10 @@
 import { XMLParser } from "fast-xml-parser";
+import { toArray } from "./utils.js";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
 });
-
-function toArray(obj) {
-  if (obj == null) return [];
-  return Array.isArray(obj) ? obj : [obj];
-}
 
 function parseAppConfig(cfg) {
   const connectionStrings = [];

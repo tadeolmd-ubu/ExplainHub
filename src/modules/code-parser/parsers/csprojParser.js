@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import { toArray } from "./utils.js";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -24,11 +25,6 @@ function getPropValue(propGroups, name) {
     if (g[name]) return g[name];
   }
   return "";
-}
-
-function toArray(obj) {
-  if (obj == null) return [];
-  return Array.isArray(obj) ? obj : [obj];
 }
 
 export function parseCsproj(content) {

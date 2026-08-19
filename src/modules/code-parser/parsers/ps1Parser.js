@@ -1,29 +1,12 @@
-import { Parser, Language } from "web-tree-sitter";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getTreeSitterParser } from "./treeSitterFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PS1_WASM = path.resolve(
   __dirname,
   "../../../../node_modules/@vscode/tree-sitter-wasm/wasm/tree-sitter-powershell.wasm",
 );
-const TS_WASM_DIR = path.resolve(
-  __dirname,
-  "../../../../node_modules/@vscode/tree-sitter-wasm/wasm",
-);
-
-let parser = null;
-
-async function getParser() {
-  if (parser) return parser;
-  await Parser.init();
-  const lang = await Language.load(PS1_WASM, {
-    locateFile: (p) => path.join(TS_WASM_DIR, p),
-  });
-  parser = new Parser();
-  parser.setLanguage(lang);
-  return parser;
-}
 
 function getCommandName(node) {
   const commandNode = node.namedChildren.find(
@@ -113,7 +96,7 @@ function extractClassMethods(node) {
 }
 
 export async function parsePs1(content) {
-  const p = await getParser();
+  const p = await getTreeSitterParser(PS1_WASM);
   const tree = p.parse(content);
   const root = tree.rootNode;
 

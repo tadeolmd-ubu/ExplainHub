@@ -1,18 +1,13 @@
-import { Parser, Language } from "web-tree-sitter";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getTreeSitterParser } from "./treeSitterFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GO_WASM = path.resolve(
   __dirname,
   "../../../../node_modules/@vscode/tree-sitter-wasm/wasm/tree-sitter-go.wasm",
 );
-const TS_WASM_DIR = path.resolve(
-  __dirname,
-  "../../../../node_modules/@vscode/tree-sitter-wasm/wasm",
-);
 
-let parser = null;
 const HTTP_METHOD_ATTRS = new Set([
   "GET",
   "POST",
@@ -22,17 +17,6 @@ const HTTP_METHOD_ATTRS = new Set([
   "HEAD",
   "OPTIONS",
 ]);
-
-async function getParser() {
-  if (parser) return parser;
-  await Parser.init();
-  const lang = await Language.load(GO_WASM, {
-    locateFile: (p) => path.join(TS_WASM_DIR, p),
-  });
-  parser = new Parser();
-  parser.setLanguage(lang);
-  return parser;
-}
 
 function getImportSource(node) {
   const imports = [];
@@ -71,7 +55,7 @@ function getMethodParams(paramList) {
 }
 
 export async function parseGo(content) {
-  const p = await getParser();
+  const p = await getTreeSitterParser(GO_WASM);
   const tree = p.parse(content);
   const root = tree.rootNode;
 
