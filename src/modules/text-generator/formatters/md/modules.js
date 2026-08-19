@@ -1,21 +1,6 @@
 import path from "node:path";
+import { isEmptyFile } from "../utils.js";
 
-const METADATA_KEYS = new Set([
-  "filePath",
-  "type",
-  "package",
-  "dependencies",
-  "features",
-]);
-
-function isEmptyFile(file) {
-  return Object.keys(file)
-    .filter((key) => !METADATA_KEYS.has(key))
-    .every((key) => {
-      const val = file[key];
-      return !val || (Array.isArray(val) && val.length === 0);
-    });
-}
 export function moduleFormatter({ name, files }) {
   const sections = [
     `# Module: ${name}\n`,

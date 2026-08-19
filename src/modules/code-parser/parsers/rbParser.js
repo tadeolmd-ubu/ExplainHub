@@ -1,18 +1,12 @@
-import { Parser, Language } from "web-tree-sitter";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getTreeSitterParser } from "./treeSitterFactory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RB_WASM = path.resolve(
   __dirname,
   "../../../../node_modules/@vscode/tree-sitter-wasm/wasm/tree-sitter-ruby.wasm",
 );
-const TS_WASM_DIR = path.resolve(
-  __dirname,
-  "../../../../node_modules/@vscode/tree-sitter-wasm/wasm",
-);
-
-let parser = null;
 
 const IMPORT_CALLS = new Set(["require", "require_relative", "load"]);
 const HTTP_METHODS = new Set([
@@ -24,17 +18,6 @@ const HTTP_METHODS = new Set([
   "head",
   "options",
 ]);
-
-async function getParser() {
-  if (parser) return parser;
-  await Parser.init();
-  const lang = await Language.load(RB_WASM, {
-    locateFile: (p) => path.join(TS_WASM_DIR, p),
-  });
-  parser = new Parser();
-  parser.setLanguage(lang);
-  return parser;
-}
 
 function getMethodName(node) {
   const nameNode = node.childForFieldName("name");
@@ -124,7 +107,7 @@ function extractMethods(node) {
 }
 
 export async function parseRb(content) {
-  const p = await getParser();
+  const p = await getTreeSitterParser(RB_WASM);
   const tree = p.parse(content);
   const root = tree.rootNode;
 

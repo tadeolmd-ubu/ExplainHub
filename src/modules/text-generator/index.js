@@ -15,6 +15,7 @@ import { commentsFormatter } from "./formatters/txt/commentsFormatter.js";
 
 import { readmeFormatter } from "./formatters/md/readme.js";
 import { moduleFormatter } from "./formatters/md/modules.js";
+import { buildNameCount } from "./formatters/utils.js";
 import path from "node:path";
 
 export class TextGenerator {
@@ -75,11 +76,7 @@ function buildModules({ files, projectPath }) {
   if (projectPath && dirs[projectPath]) {
     delete dirs[projectPath];
   }
-  const nameCount = {};
-  for (const dir of Object.keys(dirs)) {
-    const name = path.basename(dir);
-    nameCount[name] = (nameCount[name] || 0) + 1;
-  }
+  const nameCount = buildNameCount(dirs);
 
   return Object.entries(dirs).map(([dirPath, dirFiles]) => {
     let name = path.basename(dirPath);

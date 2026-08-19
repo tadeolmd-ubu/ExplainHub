@@ -1,9 +1,5 @@
 import { parse } from "smol-toml";
-
-function toArray(obj) {
-  if (obj == null) return [];
-  return Array.isArray(obj) ? obj : [obj];
-}
+import { toArray } from "./utils.js";
 
 function extractPackage(doc) {
   const pkg = doc.package;

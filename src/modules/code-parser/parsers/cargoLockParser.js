@@ -1,4 +1,5 @@
 import { parse } from "smol-toml";
+import { toArray } from "./utils.js";
 
 function extractPackages(doc) {
   const packages = doc.package;
@@ -22,11 +23,6 @@ function extractRootPackage(doc) {
   const root = list.find((p) => p.name === doc.package?.[0]?.name && !p.source);
   if (!root) return null;
   return { name: root.name || "", version: root.version || "" };
-}
-
-function toArray(obj) {
-  if (obj == null) return [];
-  return Array.isArray(obj) ? obj : [obj];
 }
 
 export async function parseCargoLock(content) {
