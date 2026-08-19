@@ -228,8 +228,11 @@ function removeTrailingProse(text) {
 export { postProcess };
 export class AiEnhancer {
   constructor() {
+    const fetchWithTimeout = (url, opts = {}) =>
+      fetch(url, { ...opts, signal: AbortSignal.timeout(10000) });
     this.ollama = new Ollama({
       host: process.env.OLLAMA_URL,
+      fetch: fetchWithTimeout,
     });
     this.model = process.env.OLLAMA_MODEL;
   }
