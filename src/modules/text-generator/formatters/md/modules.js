@@ -17,25 +17,7 @@ export function moduleFormatter({ name, files }) {
 }
 
 function moduleDescription(files) {
-  const types = new Set(files.map((f) => f.type).filter(Boolean));
-  const total = files.length;
-  const parts = [];
-  if (types.has("sql"))
-    parts.push("SQL scripts and database objects");
-  if (types.has("javascript") || types.has("typescript"))
-    parts.push("JavaScript application logic");
-  if (types.has("php")) parts.push("PHP application logic");
-  if (types.has("python")) parts.push("Python application logic");
-  if (types.has("ruby")) parts.push("Ruby application logic");
-  if (types.has("stylesheet")) parts.push("CSS styles");
-  if (types.has("markup")) parts.push("HTML templates");
-  if (types.has("rust")) parts.push("Rust modules");
-  if (types.has("java")) parts.push("Java modules");
-  if (types.has("go")) parts.push("Go modules");
-  if (types.has("csharp")) parts.push("C# modules");
-  if (types.has("config")) parts.push("Configuration files");
-  if (parts.length === 0) return null;
-  return `This module contains ${parts.join(" and ")} (${total} file${total === 1 ? "" : "s"}).`;
+  return null;
 }
 
 function getCommonPath(files) {

@@ -24,13 +24,13 @@ WHAT YOU MUST DO:
 
 A) README — Add a project description (2-3 sentences) directly after the "# Title" heading, before the first ## section. Infer from technologies, file structure, routes, and modules. Explain what the project does, its stack, and architecture.
 
-B) Module docs — If there is NO description after the "# Module:" heading (only generic text like "This module contains JavaScript application logic"), REPLACE that generic text with a real 1-2 sentence description of what the module does. Infer from its files, functions, routes, and exports. Be specific about functionality.
+B) Module docs — After the "# Module:" heading, ADD a 1-2 sentence description of what the module does. If there is already a description, improve it. If there is only the heading with no description, write one. Infer from the module's files, functions, routes, and exports. Be specific about functionality, not just file types.
 
 C) File Structure table — Improve ONLY the Purpose column text (8-15 words per file). Do NOT add or remove rows. Do NOT change file names.
 
-D) Functions table — If there is no "Description" column, ADD one. Write a brief description of what each function does based on its name, parameters, and context. One short sentence per function.
+D) Functions table — If there is no "Description" column, ADD one as the LAST column. Keep existing columns (Name, Kind, Async, File) unchanged. Write a brief description of what each function does based on its name, parameters, and context. One short sentence per function.
 
-E) Routes table — The table must have columns: Method, Path, File, Params. If "Params" column is missing, ADD it. List the parameters each endpoint accepts (inferred from the function that handles it). Example: "email, password, name".
+E) Routes table — The table must have columns: Method, Path, File, Params (in that order). If "Params" column is missing, ADD it as the last column. List ONLY the actual parameters from the function signature (e.g., "email, password"). Do NOT invent parameters like "token" or "data".
 
 F) README Modules table — Improve ONLY the Description column text. Do NOT add or remove rows.
 
