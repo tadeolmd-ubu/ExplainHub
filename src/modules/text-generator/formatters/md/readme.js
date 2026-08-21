@@ -19,7 +19,6 @@ export function readmeFormatter({
     featuresSection(files),
     structureSection(tree, projectName),
     modulesSection(files, projectPath),
-    apiSection(files),
     schemaSection(files),
   ].filter(Boolean);
 

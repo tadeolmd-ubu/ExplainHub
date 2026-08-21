@@ -80,8 +80,8 @@ function fmtTables(tables) {
   if (!tables?.length) return "";
   return tables
     .map((t) => {
-      const cols = t.columns.map((c) => c.name).join(", ");
-      const fks = t.foreignKeys.length
+      const cols = (t.columns || []).map((c) => c.name).join(", ");
+      const fks = (t.foreignKeys || []).length
         ? ` FK: [${t.foreignKeys.map((fk) => `${fk.definition.join(",")} → ${fk.reference.table}(${fk.reference.columns.join(",")})`).join("; ")}]`
         : "";
       return `${t.name}(${cols})${fks}`;

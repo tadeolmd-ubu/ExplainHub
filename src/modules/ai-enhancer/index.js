@@ -184,21 +184,24 @@ function dedupeRows(body) {
   return out;
 }
 function alignSections(text, original) {
-  const orig = new Map();
-  for (const s of parseSections(original)) {
+  const aiSections = new Map();
+  for (const s of parseSections(text)) {
     const key = sectionKey(s.title);
-    if (!orig.has(key)) orig.set(key, s);
+    if (!aiSections.has(key)) aiSections.set(key, s);
   }
-  const resultSections = parseSections(text);
+  const origSections = parseSections(original);
   const out = [];
-  for (const s of resultSections) {
+  for (const s of origSections) {
     const key = sectionKey(s.title);
-    const origSection = orig.get(key);
-    if (!origSection) continue;
+    const aiSection = aiSections.get(key);
     const cleanTitle = s.title.replace(/\s*—.*$/, "").trim();
-    out.push(`${"#".repeat(origSection.level)} ${cleanTitle}`);
-    const origBody = origSection.body.join("\n").replace(/^\s+$/g, "");
-    let body = s.body;
+    out.push(`${"#".repeat(s.level)} ${cleanTitle}`);
+    if (!aiSection) {
+      out.push(...s.body);
+      continue;
+    }
+    const origBody = s.body.join("\n").replace(/^\s+$/g, "");
+    let body = aiSection.body;
     if (key === "exports" || key === "css variables") {
       body = dedupeRows(body);
     }

@@ -60,6 +60,7 @@ export function extractExports(ast) {
     };
     visit(ast);
   } catch (error) {
+    console.error("Error extracting exports:", error);
     return [];
   }
   return exports;
