@@ -35,7 +35,7 @@ function moduleDescription(files) {
   if (types.has("csharp")) parts.push("C# modules");
   if (types.has("config")) parts.push("Configuration files");
   if (parts.length === 0) return null;
-  return `This module contains ${parts.join(" and ")} (${total} file${total === 1 ? "" : "s"}).`;
+  return `This module contains ${parts.join(" and ")} (${total} file${total === 1 ? "" : "s"}).\n\n[Module description]`;
 }
 
 function getCommonPath(files) {
