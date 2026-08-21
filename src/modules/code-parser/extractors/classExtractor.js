@@ -1,5 +1,3 @@
-import { extractFunctions } from "./functionExtractor.js";
-
 export function extractClasses(ast) {
   const classes = [];
 
@@ -9,11 +7,23 @@ export function extractClasses(ast) {
         return;
       }
       if (node.type === "ClassDeclaration") {
+        const methods = [];
+        for (const child of node.body?.body || []) {
+          if (child.type === "ClassMethod" && child.key?.name) {
+            methods.push({
+              name: child.key.name,
+              kind: "method",
+              params: (child.params || []).map((p) => p.name),
+              async: child.async || false,
+              line: child.loc?.start.line || 0,
+            });
+          }
+        }
         classes.push({
           name: node.id?.name || "Anonymous",
           extends: node.superClass?.name,
           line: node.loc?.start.line || 0,
-          methods: extractFunctions(node),
+          methods,
         });
       }
       for (const key in node) {

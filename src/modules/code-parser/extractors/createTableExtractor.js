@@ -8,7 +8,7 @@ export function extractCreateTable(node) {
 
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     let tableName = null;
     if (node.type === "create" && node.keyword === "table") {
@@ -16,7 +16,7 @@ export function extractCreateTable(node) {
         ? node.table[0].table
         : node.table.table;
 
-      for (const def of node.create_definitions) {
+      for (const def of node.create_definitions || []) {
         if (def.resource === "column") {
           columns.push({
             name: def.column.column,

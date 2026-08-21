@@ -12,7 +12,7 @@ export function extractDml(node) {
 function extractInsert(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "insert") {
       return {
@@ -31,7 +31,7 @@ function extractInsert(node) {
 function extractUpdate(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "update") {
       return {
@@ -55,7 +55,7 @@ function extractUpdate(node) {
 function extractDelete(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "delete") {
       return {
@@ -73,12 +73,13 @@ function extractDelete(node) {
 function extractSelect(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "select") {
       return {
         columns: node.columns?.map((c) => {
           const expr = c.expr;
+          if (!expr) return { column: "unknown", alias: c.as?.value };
           if (expr.type === "star") return { column: "*", alias: null };
           if (expr.type === "column_ref")
             return {

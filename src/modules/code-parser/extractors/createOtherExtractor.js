@@ -21,7 +21,7 @@ export function extractOtherCreate(node, sqlContent) {
 function extractCreateView(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "create" && node.keyword === "view") {
       let name = null;
@@ -37,6 +37,7 @@ function extractCreateView(node) {
         select: node.query_expr,
       };
     }
+    return null;
   } catch (err) {
     console.error("Error extracting CREATE VIEW:", err);
     return null;
@@ -46,7 +47,7 @@ function extractCreateView(node) {
 function extractCreateIndex(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "create" && node.keyword === "index") {
       return {
@@ -59,6 +60,7 @@ function extractCreateIndex(node) {
         using: node.index_using,
       };
     }
+    return null;
   } catch (err) {
     console.error("Error extracting CREATE INDEX:", err);
     return null;

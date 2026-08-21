@@ -1,7 +1,7 @@
 export function extractDrop(node) {
   try {
     if (!node || typeof node !== "object") {
-      return;
+      return null;
     }
     if (node.type === "drop") {
       return {
