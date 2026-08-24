@@ -12,7 +12,6 @@ export const techRules = {
     "Gemfile": "Ruby",
     "Gemfile.lock": "Ruby",
     "Rakefile": "Ruby",
-    "*.gemspec": "Ruby",
   },
 
   extensions: {

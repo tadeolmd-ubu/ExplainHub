@@ -1,18 +1,12 @@
-function required(name) {
-  if (!process.env[name]) throw new Error(`Falta ${name}`);
-  return process.env[name];
-}
 function optional(name, fallback) {
   return process.env[name] || fallback;
 }
 
 export const config = {
-  get port() { return parseInt(optional("PORT", "3000"), 10); },
   ollama: {
     get url() { return optional("OLLAMA_URL", "http://localhost:11434"); },
     get model() { return optional("OLLAMA_MODEL", ""); },
   },
-
 };
 
 export function validateEnv() {

@@ -28,9 +28,7 @@ function stripCodeBlock(text) {
   return match ? match[1].trim() : trimmed;
 }
 function postProcess(text, original = "") {
-  let out = text
-    .replace(/Membersia/g, "Membresia")
-    .replace(/limpiar_membresias_duplicadas\.sql/g, "limpiar_membresias_duplicadas.sql");
+  let out = text;
 
   out = normalizeTables(out);
   out = alignSections(out, original);

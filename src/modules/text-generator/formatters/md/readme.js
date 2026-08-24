@@ -220,15 +220,6 @@ function moduleDescription(types) {
   return parts.length > 0 ? parts.join(", ") : "-";
 }
 
-function apiSection(files) {
-  const routes = files.flatMap((f) =>
-    (f.routes || []).map((r) => ({ ...r, file: f.filePath })),
-  );
-  if (routes.length === 0) return null;
-  const rows = routes.map((r) => `| ${r.method} | ${r.path} | ${r.file} |`);
-  return `## API Endpoints\n\n| Method | Path | File |\n|--------|------|------|\n${rows.join("\n")}`;
-}
-
 function schemaSection(files) {
   const items = [];
   for (const file of files) {

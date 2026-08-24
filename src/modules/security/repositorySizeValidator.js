@@ -4,12 +4,11 @@ import { ignoredNames } from "../structure-extractor/index.js";
 import { resolvePath } from "./pathValidator.js";
 
 const maxFiles = 5000;
-const maxFileSize = 5 * 1024 * 1024;
 const maxProjectSize = 100 * 1024 * 1024;
 export async function validateRepositorySize(projectPath) {
   const absolutePath = resolvePath(projectPath);
   await fs.access(absolutePath);
-  const state = { totalSize: 0, fileCount: 0, oversizedFiles: [] };
+  const state = { totalSize: 0, fileCount: 0 };
   await walkDirectory(absolutePath, state);
   if (state.totalSize > maxProjectSize) {
     return {
@@ -27,7 +26,6 @@ export async function validateRepositorySize(projectPath) {
     safe: true,
     totalSize: state.totalSize,
     fileCount: state.fileCount,
-    oversizedFiles: state.oversizedFiles,
   };
 }
 async function walkDirectory(dirPath, state) {
@@ -41,9 +39,6 @@ async function walkDirectory(dirPath, state) {
     } else {
       state.fileCount++;
       state.totalSize += stats.size;
-      if (stats.size > maxFileSize) {
-        state.oversizedFiles.push({ path: fullPath, size: stats.size });
-      }
     }
   }
 }
