@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
-    "test": "node --test"
+    "test": "node --test test/*.test.js"
   },
   "bin": {
     "explain": "./src/modules/cli/index.js"
