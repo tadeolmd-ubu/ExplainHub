@@ -45,7 +45,12 @@ export class RepositoryCloner {
     await fs.mkdir(tempPath, { recursive: true });
 
     try {
-      await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
+      await Promise.race([
+        this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Clone timeout: excedió 60 segundos")), 60000),
+        ),
+      ]);
     } catch (error) {
       await this.cleanup(tempPath);
       throw new Error(
@@ -205,6 +210,10 @@ export class RepositoryCloner {
     await fs.mkdir(tempPath, { recursive: true });
     try {
       const zip = new AdmZip(zipPath);
+      const entries = zip.getEntries();
+      if (entries.length > 5000) {
+        throw new Error(`Zip contiene ${entries.length} archivos, máximo permitido 5000`);
+      }
       zip.extractAllTo(repoPath, true);
     } catch (error) {
       await this.cleanup(tempPath);
