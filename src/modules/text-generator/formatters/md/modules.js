@@ -4,7 +4,6 @@ import { isEmptyFile } from "../utils.js";
 export function moduleFormatter({ name, files }) {
   const sections = [
     `# Module: ${name}\n`,
-    moduleDescription(files),
     fileStructureSection(files),
     functionsSection(files),
     classesSection(files),
@@ -14,17 +13,6 @@ export function moduleFormatter({ name, files }) {
   ].filter(Boolean);
 
   return sections.join("\n\n");
-}
-
-function moduleDescription(files) {
-  return null;
-}
-
-function getCommonPath(files) {
-  const dirs = files.map((f) => path.dirname(f.filePath));
-  const first = dirs[0];
-  if (!first) return "";
-  return first;
 }
 
 function fileStructureSection(files) {
