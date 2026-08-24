@@ -31,7 +31,6 @@ export class RepositoryCloner {
    * @returns {Promise<CloneResult>} Metadata del clon realizado.
    */
   async clone(repositoryUrl, processCallback) {
-    console.log("iniciando clonado");
     const sanitizedRepositoryUrl = this.validateRepositoryUrl(repositoryUrl);
 
     await this.ensureBaseTempDirectory();
@@ -47,7 +46,6 @@ export class RepositoryCloner {
 
     try {
       await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
-      console.log("termino clonado");
     } catch (error) {
       await this.cleanup(tempPath);
       throw new Error(
