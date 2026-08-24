@@ -33,7 +33,8 @@ async function walkDirectory(dirPath, state) {
   for (const entry of entries) {
     if (shouldIgnore(entry)) continue;
     const fullPath = path.join(dirPath, entry);
-    const stats = await fs.stat(fullPath);
+    const stats = await fs.lstat(fullPath);
+    if (stats.isSymbolicLink()) continue;
     if (stats.isDirectory()) {
       await walkDirectory(fullPath, state);
     } else {

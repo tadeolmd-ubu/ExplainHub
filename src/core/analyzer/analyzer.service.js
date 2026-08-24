@@ -34,9 +34,10 @@ export class AnalyzerService {
       if (!safe) throw new Error(reason);
     }
 
-    if (result) {
-      const sizeResult = await validateRepositorySize(projectPath);
-      if (!sizeResult.safe) throw new Error(sizeResult.reason);
+    const sizeResult = await validateRepositorySize(projectPath);
+    if (!sizeResult.safe) {
+      if (result) await cloner.cleanup(result.tempPath);
+      throw new Error(sizeResult.reason);
     }
 
     try {

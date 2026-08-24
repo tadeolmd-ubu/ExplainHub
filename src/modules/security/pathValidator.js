@@ -16,8 +16,10 @@ export function validatePath(input) {
 }
 
 function isSensitivePath(resolved) {
+  const normalized = resolved.replace(/\\/g, "/");
   for (const dir of allSensitive) {
-    if (resolved === dir || resolved.startsWith(dir + "/")) return true;
+    const normalizedDir = dir.replace(/\\/g, "/");
+    if (normalized === normalizedDir || normalized.startsWith(normalizedDir + "/")) return true;
   }
   return false;
 }

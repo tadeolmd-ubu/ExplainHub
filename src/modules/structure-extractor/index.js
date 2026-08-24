@@ -39,7 +39,6 @@ export class StructureExtractor {
 
       return { tree, technologies, entryPoints };
     } catch (error) {
-      console.error("ERROR REAL:", error);
       throw error;
     }
   }
