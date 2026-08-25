@@ -21,6 +21,7 @@ import { parseCargoConfig } from "./cargoConfigParser.js";
 import { parseRb } from "./rbParser.js";
 import { parseIni } from "./iniParser.js";
 import { parsePs1 } from "./ps1Parser.js";
+import { parseKotlin } from "./ktParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -47,6 +48,7 @@ const parsers = {
   ruby: parseRb,
   ini: parseIni,
   powershell: parsePs1,
+  kotlin: parseKotlin,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];

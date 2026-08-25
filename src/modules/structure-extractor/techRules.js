@@ -12,6 +12,10 @@ export const techRules = {
     "Gemfile": "Ruby",
     "Gemfile.lock": "Ruby",
     "Rakefile": "Ruby",
+    "build.gradle.kts": "Kotlin",
+    "build.gradle": "Gradle",
+    "settings.gradle.kts": "Kotlin",
+    "settings.gradle": "Gradle",
   },
 
   extensions: {
@@ -46,5 +50,7 @@ export const techRules = {
     ".cfg": "INI",
     ".ps1": "PowerShell",
     ".psm1": "PowerShell",
+    ".kt": "Kotlin",
+    ".kts": "Kotlin",
   },
 };

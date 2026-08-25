@@ -44,6 +44,7 @@ const parseableTypes = new Set([
   "ruby",
   "ini",
   "powershell",
+  "kotlin",
 ]);
 const parseableTypesOverride = new Map([
   ["Cargo.toml", "cargotoml"],
