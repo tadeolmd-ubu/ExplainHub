@@ -34,4 +34,6 @@ export const fileTypes = {
   ".cfg": "ini",
   ".ps1": "powershell",
   ".psm1": "powershell",
+  ".kt": "kotlin",
+  ".kts": "kotlin",
 };
