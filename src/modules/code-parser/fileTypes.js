@@ -36,4 +36,5 @@ export const fileTypes = {
   ".psm1": "powershell",
   ".kt": "kotlin",
   ".kts": "kotlin",
+  ".dart": "dart",
 };

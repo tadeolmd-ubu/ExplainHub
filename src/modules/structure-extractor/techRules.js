@@ -16,6 +16,9 @@ export const techRules = {
     "build.gradle": "Gradle",
     "settings.gradle.kts": "Kotlin",
     "settings.gradle": "Gradle",
+    "pubspec.yaml": "Dart",
+    "pubspec.lock": "Dart",
+    "analysis_options.yaml": "Dart",
   },
 
   extensions: {
@@ -52,5 +55,6 @@ export const techRules = {
     ".psm1": "PowerShell",
     ".kt": "Kotlin",
     ".kts": "Kotlin",
+    ".dart": "Dart",
   },
 };

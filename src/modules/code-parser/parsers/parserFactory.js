@@ -22,6 +22,7 @@ import { parseRb } from "./rbParser.js";
 import { parseIni } from "./iniParser.js";
 import { parsePs1 } from "./ps1Parser.js";
 import { parseKotlin } from "./ktParser.js";
+import { parseDart } from "./dartParser.js";
 
 const parsers = {
   javascript: parseJavaScript,
@@ -49,6 +50,7 @@ const parsers = {
   ini: parseIni,
   powershell: parsePs1,
   kotlin: parseKotlin,
+  dart: parseDart,
 };
 export async function parseByType(fileType, content) {
   const parser = parsers[fileType];
