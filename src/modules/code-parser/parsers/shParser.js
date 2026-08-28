@@ -20,6 +20,61 @@ const HTTP_METHODS = new Set([
   "options",
 ]);
 
+const FLAGS_WITH_VALUE = new Set([
+  "-H",
+  "--header",
+  "-d",
+  "--data",
+  "--data-binary",
+  "--data-raw",
+  "--data-urlencode",
+  "-F",
+  "--form",
+  "-o",
+  "--output",
+  "-O",
+  "-u",
+  "--user",
+  "--user-agent",
+  "-A",
+  "-e",
+  "--referer",
+  "-b",
+  "--cookie",
+  "-c",
+  "--cookie-jar",
+  "-m",
+  "--max-time",
+  "--connect-timeout",
+  "--retry",
+  "-T",
+  "--upload-file",
+]);
+
+const VALUE_LESS_FLAGS = new Set([
+  "-I",
+  "--head",
+  "-s",
+  "--silent",
+  "-S",
+  "--show-error",
+  "-k",
+  "--insecure",
+  "-v",
+  "--verbose",
+  "-L",
+  "--location",
+  "-i",
+  "--include",
+  "-f",
+  "--fail",
+  "-g",
+  "--globoff",
+  "--compressed",
+  "-q",
+  "--quiet",
+]);
+
 function stripQuotes(text) {
   return (text || "").replace(/^['"]|['"]$/g, "").trim();
 }
@@ -50,12 +105,23 @@ function extractHttpRoute(node, cmdName, routes) {
 
   if (cmdName === "http") {
     let method = "GET";
-    let pathArg = args.find((a) => !a.startsWith("-"));
-    if (pathArg && HTTP_METHODS.has(pathArg.toLowerCase())) {
-      method = pathArg.toUpperCase();
-      pathArg = args
-        .slice(args.indexOf(pathArg) + 1)
-        .find((a) => !a.startsWith("-"));
+    let pathArg = null;
+    for (let i = 0; i < args.length; i++) {
+      const token = args[i];
+      if (HTTP_METHODS.has(token.toLowerCase())) {
+        method = token.toUpperCase();
+        continue;
+      }
+      if (token.startsWith("-")) continue;
+      if (/^[^=\s:]+=[^=\s]+$/.test(token)) continue;
+      if (/^[^/:\s]+:[^/\s]+$/.test(token) && !/^https?:/.test(token)) {
+        continue;
+      }
+      if (/^https?:\/\//.test(token) || /^\//.test(token)) {
+        pathArg = token;
+        continue;
+      }
+      if (!pathArg) pathArg = token;
     }
     if (pathArg) {
       routes.push({ method, path: pathArg.replace(/[;,]$/, ""), line });
@@ -63,17 +129,45 @@ function extractHttpRoute(node, cmdName, routes) {
     return;
   }
 
-  let method = "GET";
+  let method = null;
   let pathArg = null;
+  const hasDataFlag = args.some((a) => a === "-d" || a.startsWith("--data"));
+
   for (let i = 0; i < args.length; i++) {
     const token = args[i];
-    if ((token === "-X" || token === "--request") && i + 1 < args.length) {
-      method = args[i + 1].toUpperCase();
+
+    if (FLAGS_WITH_VALUE.has(token)) {
+      i++;
       continue;
     }
-    if (token.startsWith("-")) continue;
-    if (token === method && /^[A-Z]+$/.test(token)) continue;
+
+    if (VALUE_LESS_FLAGS.has(token)) {
+      if (token === "-I" || token === "--head") {
+        method = "HEAD";
+      }
+      continue;
+    }
+
+    if (token.startsWith("-")) {
+      if (token === "-X" || token === "--request") {
+        if (i + 1 < args.length) method = args[i + 1].toUpperCase();
+        i++;
+      } else if (/^-[A-Z]$/.test(token) && i + 1 < args.length) {
+        method = args[i + 1].toUpperCase();
+        i++;
+      }
+      continue;
+    }
+
+    if (HTTP_METHODS.has(token.toLowerCase())) continue;
+
     if (!pathArg) pathArg = token;
+  }
+
+  if (!method) {
+    if (cmdName === "wget") method = "GET";
+    else if (hasDataFlag) method = "POST";
+    else method = "GET";
   }
 
   if (pathArg) {
