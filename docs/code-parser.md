@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, **Ruby**, **PowerShell**, **INI**, **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), and **Cargo project files** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.cargo/config.toml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, Cargo dependencies, build profiles, workspace structure, and more.
+The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Python**, **PHP**, **C#**, **Rust**, **Java**, **Go**, **C/C++**, **Ruby**, **PowerShell**, **Kotlin**, **Dart**, **INI**, **.NET project files** (`.sln`, `.csproj`, `.config`, `.xaml`), and **Cargo project files** (`Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `.cargo/config.toml`), extracting structural information: imports, exports, functions, classes, HTTP routes, database schema objects, NuGet packages, UI components, Cargo dependencies, build profiles, workspace structure, and more.
 
 **Location:** `src/modules/code-parser/`
 
@@ -42,6 +42,8 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/rbParser.js` | Ruby parser using `web-tree-sitter` + WASM grammar |
 | `parsers/iniParser.js` | INI parser using `web-tree-sitter` + WASM grammar |
 | `parsers/ps1Parser.js` | PowerShell parser using `web-tree-sitter` + WASM grammar |
+| `parsers/ktParser.js` | Kotlin parser using `tree-sitter-kotlin` (native bindings) |
+| `parsers/dartParser.js` | Dart parser using `web-tree-sitter` + WASM grammar |
 | `parsers/cargoTomlParser.js` | Cargo.toml parser using `smol-toml` (package metadata, deps, workspace, features, profiles, build targets, patches) |
 | `parsers/cargoLockParser.js` | Cargo.lock parser using `smol-toml` (resolved dependency tree with versions and checksums) |
 | `parsers/rustToolChainParser.js` | rust-toolchain.toml parser using `smol-toml` (toolchain channel, components, targets) |
@@ -493,6 +495,72 @@ Parses `.ps1` and `.psm1` files using `web-tree-sitter` with a prebuilt PowerShe
 
 ---
 
+### Kotlin Parser (`ktParser.js`)
+
+Parses `.kt` and `.kts` files using `tree-sitter-kotlin` with the native `tree-sitter` Node bindings (not WASM). The parser is initialized lazily (singleton pattern) and walks the Concrete Syntax Tree (CST) recursively.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `import_header` | `source, alias, line` |
+| Classes | `class_declaration` (top-level) | `name, kind, extends, methods[], line` |
+| Objects | `object_declaration` | `name, kind: "object", methods[], line` |
+| Methods | `function_declaration` inside a class body | `name, kind: "method", params[], async, line` (added to parent class's `methods[]`) |
+| Functions | `function_declaration` (top-level) | `name, kind: "function", params[], async, line` |
+| Exports | Top-level classes, objects, functions, `const val`, and type aliases | `name, kind, line` |
+| Routes | Not applicable | Empty array |
+
+**Class kind detection (from modifiers):**
+- `data class` — `data` modifier
+- `sealed class` — `sealed` modifier
+- `abstract class` — `abstract` modifier
+- `annotation class` — `annotation` modifier
+- `enum class` — `enum` keyword
+- `class` — default (includes interfaces, which map to `class`)
+- `object` — `object_declaration`
+
+**Inheritance:** The first `delegation_specifier` (`: Supertype()`, `: Interface`) is extracted into `extends`.
+
+**Suspend support:** `suspend fun` functions and methods report `async: true`.
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+
+---
+
+### Dart Parser (`dartParser.js`)
+
+Parses `.dart` files using `web-tree-sitter` with a Dart WASM grammar (committed locally in `src/modules/code-parser/wasm/tree-sitter-dart.wasm`) loaded via the lazy `getTreeSitterParser` factory. Walks the CST recursively, tracking the enclosing class context.
+
+**Extracted objects:**
+
+| Element | CST Node | Properties |
+|---------|----------|-----------|
+| Imports | `import_or_export` → `library_import` | `source, alias, line` |
+| Exports | `import_or_export` → `library_export` | `name, kind: "export", line` |
+| Classes | `class_definition`, `mixin_declaration`, `enum_declaration`, `extension_declaration` (top-level) | `name, kind, extends (or `on` type), methods[], line` |
+| Methods | `method_signature`, `getter_signature`, `setter_signature`, `declaration` inside a class body | `name, kind ("method" / "getter" / "setter" / "constructor" / "factory constructor"), params[], returnType?, annotation?, line` (added to parent class's `methods[]`) |
+| Functions | `function_signature` / `declaration` (top-level) | `name, kind: "function", params[], returnType, line` |
+| Typedefs | `type_alias` | `name, kind: "typedef", line` |
+| Routes | Not applicable | Empty array |
+
+**Class kind detection:**
+- `class` — `class_definition`
+- `mixin` — `mixin_declaration`
+- `enum` — `enum_declaration`
+- `extension` — `extension_declaration` (with the nullable `on` type stored in `extends`)
+
+**Generic types:** `class Foo<T>` stores the full name including type parameters (`Foo<T>`).
+
+**Exports:** Every top-level class, mixin, enum, extension, typedef, and function is also pushed to `exports` with its corresponding kind.
+
+**Fault tolerance:**
+- Tree-sitter CST is error-tolerant — produces partial trees even on syntax errors
+- WASM loading errors handled by the calling code
+
+---
+
 ### Cargo.toml Parser (`cargoTomlParser.js`)
 
 Parses `Cargo.toml` files using `smol-toml` (TOML v1.1.0 compliant, zero dependencies, ESM native). Extracts package metadata, dependencies, workspace configuration, feature flags, build profiles, build targets, patches, and platform-specific dependencies.
@@ -789,6 +857,8 @@ Detects Express-style HTTP route definitions (`get`, `post`, `put`, `delete`, `p
 | `.rb`, `.rake`, `.gemspec` | `ruby` | Yes | `web-tree-sitter` (WASM) |
 | `.ini`, `.cfg` | `ini` | Yes | `web-tree-sitter` (WASM) |
 | `.ps1`, `.psm1` | `powershell` | Yes | `web-tree-sitter` (WASM) |
+| `.kt`, `.kts` | `kotlin` | Yes | `tree-sitter-kotlin` |
+| `.dart` | `dart` | Yes | `web-tree-sitter` (WASM) |
 | `.sln` | `sln` | Yes | regex |
 | `.csproj` | `csproj` | Yes | `fast-xml-parser` |
 | `.config` | `config` | Yes | `fast-xml-parser` |
@@ -845,6 +915,8 @@ CodeParser.parse(tree, projectPath)
      |           +-- rbParser: web-tree-sitter → CST (recursive walk)
      |           +-- iniParser: web-tree-sitter → CST (sections + key-value pairs)
      |           +-- ps1Parser: web-tree-sitter → CST (functions, classes, imports)
+     |           +-- ktParser: tree-sitter-kotlin → CST (classes, functions, imports)
+     |           +-- dartParser: web-tree-sitter → CST (classes, functions, imports, exports)
      |           +-- slnParser: regex-based
     |           +-- csprojParser: fast-xml-parser → XML
     |           +-- configParser: fast-xml-parser → XML (auto-detect App.config vs packages.config)
@@ -869,7 +941,9 @@ CodeParser.parse(tree, projectPath)
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
-| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, and INI parsing |
+| `tree-sitter` | npm | Native tree-sitter runtime for Kotlin parsing |
+| `tree-sitter-kotlin` | npm | Kotlin grammar for tree-sitter (native bindings) |
+| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, and Dart parsing |
 | `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, Go, C/C++, Ruby, PowerShell, and INI WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
 | `smol-toml` | npm | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
@@ -902,8 +976,8 @@ console.log(files[0].routes);   // routes of first file
 - **Fail-soft:** Each extractor wraps its logic in try/catch and returns `[]` on error, so one malformed file doesn't break the entire analysis.
 - **Extensible parsers:** Add a new language by creating a parser in `parsers/` and registering it in `parserFactory.js`.
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
-- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, Ruby, PowerShell, INI, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
+- **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, Ruby, PowerShell, Kotlin, Dart, INI, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
-- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx`, `.rb`, `.ps1`, and `.ini` files.
+- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx`, `.rb`, `.ps1`, `.ini`, and `.dart` files. Kotlin instead uses the native `tree-sitter` binding with `tree-sitter-kotlin` (no WASM), also as a lazy singleton.
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
 - **TOML project files:** Cargo parsers handle `Cargo.toml` (package metadata, dependencies, workspace, features, profiles, build targets, patches), `Cargo.lock` (resolved dependency tree), `rust-toolchain.toml` (toolchain config), and `.cargo/config.toml` (build config, registries, aliases). File type resolution uses filename-based overrides for files sharing the `.toml` extension.
