@@ -151,7 +151,13 @@ export const techRules = {
     "Gemfile": "Ruby",
     "Gemfile.lock": "Ruby",
     "Rakefile": "Ruby",
-    "*.gemspec": "Ruby",
+    "build.gradle.kts": "Kotlin",
+    "build.gradle": "Gradle",
+    "settings.gradle.kts": "Kotlin",
+    "settings.gradle": "Gradle",
+    "pubspec.yaml": "Dart",
+    "pubspec.lock": "Dart",
+    "analysis_options.yaml": "Dart",
   },
   extensions: {
     ".js": "JavaScript",
@@ -185,6 +191,9 @@ export const techRules = {
     ".cfg": "INI",
     ".ps1": "PowerShell",
     ".psm1": "PowerShell",
+    ".kt": "Kotlin",
+    ".kts": "Kotlin",
+    ".dart": "Dart",
   },
 };
 ```

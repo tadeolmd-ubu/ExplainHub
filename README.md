@@ -18,7 +18,7 @@ RepositoryCloner      →  Clones repo / extracts .zip to temp directory
 StructureExtractor    →  Builds file tree, detects technologies & entry points
     │
     ▼
-CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/INI/.NET/Cargo
+CodeParser            →  Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/Kotlin/Dart/INI/.NET/Cargo
                          Extracts imports, exports, functions, classes, routes
     │
     ▼
@@ -42,7 +42,7 @@ Output                →  Console + optional save to .txt / README.md + docs/*
 |------|--------|-------------|
 | 1 | RepositoryCloner | Clones remote repos into `/temp` (kept on disk); extracts `.zip` files (cleaned up) |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
-| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/INI/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `smol-toml`, and shell-to-`ast` |
+| 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/PowerShell/Kotlin/Dart/INI/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `tree-sitter-kotlin`, `smol-toml`, and shell-to-`ast` |
 | 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) with Project Info, Dependencies, Features sections |
 | 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
 | — | Security | Validates paths and repository size before processing |
@@ -104,7 +104,10 @@ Runs all tests in `test/` using Node's built-in test runner (`node:test`). Tests
 **Test files:**
 | File | Coverage |
 |------|----------|
-| `test/.test.js` | Cloner, StructureExtractor, CodeParser, TextGenerator, AiEnhancer, AnalyzerService |
+| `test/security.test.js` | Security: `validatePath` and `validateRepositorySize` |
+| `test/cloner.test.js` | Cloner: URL validation, repository name extraction, source detection |
+| `test/ai-enhancer.test.js` | AiEnhancer: `postProcess` formatting, fallbacks, deduplication |
+| `test/kt-parser.test.js` | Kotlin parser: imports, classes, functions, exports |
 | `test/md-flow.test.js` | Markdown flow: README sections, modules structure, no-package.json fallback |
 | `test/zip-flow.test.js` | ZIP extraction: valid zip, invalid zip error |
 
@@ -169,6 +172,8 @@ The `CodeParser` can analyze the following file types:
 | `.rb`, `.rake`, `.gemspec` | Ruby | `web-tree-sitter` (WASM) |
 | `.ini`, `.cfg` | INI | `web-tree-sitter` (WASM) |
 | `.ps1`, `.psm1` | PowerShell | `web-tree-sitter` (WASM) |
+| `.kt`, `.kts` | Kotlin | `tree-sitter-kotlin` |
+| `.dart` | Dart | `web-tree-sitter` (WASM) |
 | `.sln` | Solution | regex |
 | `.csproj` | C# Project | `fast-xml-parser` |
 | `.config` | Configuration | `fast-xml-parser` |
@@ -192,7 +197,7 @@ When generating Markdown (`format: "md"`), the README includes additional sectio
 
 Languages we plan to add in future releases:
 
-_No languages pending — all planned languages have been implemented._
+_Kotlin and Dart were the last additions — no further languages are planned at this time._
 
 ---
 
@@ -204,7 +209,9 @@ _No languages pending — all planned languages have been implemented._
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
 | php-parser | PHP AST parsing (pure JS, zero deps) |
-| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, and INI |
+| tree-sitter | Native tree-sitter runtime for Kotlin parsing |
+| tree-sitter-kotlin | Kotlin grammar for tree-sitter (native bindings) |
+| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, and Dart |
 | @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, etc.) |
 | fast-xml-parser | XML parsing for .csproj, .config, .xaml |
 | smol-toml | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
