@@ -37,4 +37,6 @@ export const fileTypes = {
   ".kt": "kotlin",
   ".kts": "kotlin",
   ".dart": "dart",
+  ".sh": "bash",
+  ".bash": "bash",
 };
