@@ -46,12 +46,15 @@ const parseableTypes = new Set([
   "powershell",
   "kotlin",
   "dart",
+  "bash",
 ]);
 const parseableTypesOverride = new Map([
   ["Cargo.toml", "cargotoml"],
   ["Cargo.lock", "cargolock"],
   ["rust-toolchain.toml", "rusttoolchain"],
   [".cargo/config.toml", "cargoconfig"],
+  [".bashrc", "bash"],
+  [".bash_profile", "bash"],
 ]);
 export function isParseable(filePath) {
   const type = getFileType(filePath);

@@ -56,5 +56,9 @@ export const techRules = {
     ".kt": "Kotlin",
     ".kts": "Kotlin",
     ".dart": "Dart",
+    ".sh": "Shell",
+    ".bash": "Shell",
+    ".bashrc": "Shell",
+    ".bash_profile": "Shell",
   },
 };

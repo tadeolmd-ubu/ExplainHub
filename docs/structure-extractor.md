@@ -191,6 +191,10 @@ export const techRules = {
     ".cfg": "INI",
     ".ps1": "PowerShell",
     ".psm1": "PowerShell",
+    ".sh": "Shell",
+    ".bash": "Shell",
+    ".bashrc": "Shell",
+    ".bash_profile": "Shell",
     ".kt": "Kotlin",
     ".kts": "Kotlin",
     ".dart": "Dart",
@@ -216,6 +220,7 @@ export const entryRules = {
   "C++": ["main.cpp"],
   "Ruby": ["main.rb", "app.rb", "config.ru"],
   "PowerShell": ["main.ps1"],
+  "Shell": ["main.sh", "entrypoint.sh"],
 };
 ```
 
