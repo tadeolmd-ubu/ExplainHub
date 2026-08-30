@@ -11,4 +11,5 @@ export const entryRules = {
   "Ruby": ["main.rb", "app.rb", "config.ru"],
   "PowerShell": ["main.ps1"],
   "Shell": ["main.sh", "entrypoint.sh"],
+  "Dart": ["main.dart", "bin/main.dart"],
 };

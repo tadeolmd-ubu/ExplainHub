@@ -129,10 +129,13 @@ function extractExtensionOnType(node) {
 
   if (node.type !== "extension_declaration") return null;
   const onNode = node.namedChildren.find((c) => c.type === "on");
-  if (!onNode) return null;
-  const idx = node.namedChildren.indexOf(onNode);
-  const next = node.namedChildren[idx + 1];
-  return next ? next.text : null;
+  if (onNode) {
+    const idx = node.namedChildren.indexOf(onNode);
+    const next = node.namedChildren[idx + 1];
+    return next ? next.text : null;
+  }
+  const typeNode = node.namedChildren.find((c) => c.type === "type_identifier");
+  return typeNode ? typeNode.text : null;
 }
 
 function extractClassBody(node) {
