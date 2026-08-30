@@ -211,9 +211,7 @@ _Kotlin and Dart were the last additions — no further languages are planned at
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
 | php-parser | PHP AST parsing (pure JS, zero deps) |
-| tree-sitter | Native tree-sitter runtime for Kotlin parsing |
-| tree-sitter-kotlin | Kotlin grammar for tree-sitter (native bindings) |
-| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, Dart, and Shell/Bash |
+| web-tree-sitter | WASM-based AST parsing for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, Dart, Shell/Bash, and Kotlin |
 | @vscode/tree-sitter-wasm | Prebuilt WASM grammars (C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, Bash, Dart, etc.) |
 | fast-xml-parser | XML parsing for .csproj, .config, .xaml |
 | smol-toml | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |

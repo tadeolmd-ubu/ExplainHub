@@ -43,7 +43,7 @@ The `CodeParser` module parses JavaScript, TypeScript, HTML, CSS, **SQL**, **Pyt
 | `parsers/iniParser.js` | INI parser using `web-tree-sitter` + WASM grammar |
 | `parsers/ps1Parser.js` | PowerShell parser using `web-tree-sitter` + WASM grammar |
 | `parsers/shParser.js` | Bash/Shell parser using `web-tree-sitter` + WASM grammar |
-| `parsers/ktParser.js` | Kotlin parser using `tree-sitter-kotlin` (native bindings) |
+| `parsers/ktParser.js` | Kotlin parser using `web-tree-sitter` + WASM grammar |
 | `parsers/dartParser.js` | Dart parser using `web-tree-sitter` + WASM grammar |
 | `parsers/cargoTomlParser.js` | Cargo.toml parser using `smol-toml` (package metadata, deps, workspace, features, profiles, build targets, patches) |
 | `parsers/cargoLockParser.js` | Cargo.lock parser using `smol-toml` (resolved dependency tree with versions and checksums) |
@@ -526,7 +526,7 @@ Parses `.sh` and `.bash` files (plus extensionless dotfiles `.bashrc` and `.bash
 
 ### Kotlin Parser (`ktParser.js`)
 
-Parses `.kt` and `.kts` files using `tree-sitter-kotlin` with the native `tree-sitter` Node bindings (not WASM). The parser is initialized lazily (singleton pattern) and walks the Concrete Syntax Tree (CST) recursively.
+Parses `.kt` and `.kts` files using `web-tree-sitter` with the `tree-sitter-kotlin` WASM grammar (`src/modules/code-parser/wasm/tree-sitter-kotlin.wasm`). The parser is loaded through the shared `treeSitterFactory` and walks the Concrete Syntax Tree (CST) recursively.
 
 **Extracted objects:**
 
@@ -947,7 +947,7 @@ CodeParser.parse(tree, projectPath)
      |           +-- iniParser: web-tree-sitter → CST (sections + key-value pairs)
      |           +-- ps1Parser: web-tree-sitter → CST (functions, classes, imports)
      |           +-- shParser: web-tree-sitter → CST (functions, imports, exports, curl/wget routes)
-     |           +-- ktParser: tree-sitter-kotlin → CST (classes, functions, imports)
+     |           +-- ktParser: web-tree-sitter → CST (classes, functions, imports)
      |           +-- dartParser: web-tree-sitter → CST (classes, functions, imports, exports)
      |           +-- slnParser: regex-based
     |           +-- csprojParser: fast-xml-parser → XML
@@ -973,9 +973,7 @@ CodeParser.parse(tree, projectPath)
 | `node-sql-parser` | npm | SQL AST parsing with dialect support |
 | `php-parser` | npm | PHP AST parsing (pure JS, zero deps) |
 | `python3` (ast) | system | Python AST parsing via `execFile` subprocess |
-| `tree-sitter` | npm | Native tree-sitter runtime for Kotlin parsing |
-| `tree-sitter-kotlin` | npm | Kotlin grammar for tree-sitter (native bindings) |
-| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, Dart, and Bash parsing |
+| `web-tree-sitter` | npm | Tree-sitter WASM runtime for C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, Dart, Bash, and Kotlin parsing |
 | `@vscode/tree-sitter-wasm` | npm | Prebuilt C#, Rust, Java, Go, C/C++, Ruby, PowerShell, INI, and Bash WASM grammars (VS Code sourced) |
 | `fast-xml-parser` | npm | XML parsing for .csproj, .config, .xaml |
 | `smol-toml` | npm | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
@@ -1010,6 +1008,6 @@ console.log(files[0].routes);   // routes of first file
 - **ParserError:** Provides structured error context (file path, reason, file type) for debugging.
 - **Multi-language:** Supports JS, TS, HTML, CSS, SQL, Python, PHP, C#, Rust, Java, Go, C, C++, Ruby, PowerShell, Shell (Bash), Kotlin, Dart, INI, .sln, .csproj, .config, .xaml, Cargo.toml, Cargo.lock, rust-toolchain.toml, and .cargo/config.toml out of the box.
 - **SQL dialect fallback chain:** transactsql → mysql → statement-level mysql → regex — ensures maximum coverage even when `node-sql-parser` cannot parse a given dialect feature.
-- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx`, `.rb`, `.ps1`, `.ini`, `.dart`, and `.sh`/`.bash` files. Kotlin instead uses the native `tree-sitter` binding with `tree-sitter-kotlin` (no WASM), also as a lazy singleton.
+- **Tree-sitter WASM initialization:** Lazy singleton pattern — `Parser.init()` and `Language.load()` run once per language, reused across all `.cs`, `.rs`, `.java`, `.go`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.cxx`, `.rb`, `.ps1`, `.ini`, `.dart`, `.sh`/`.bash`, and `.kt`/`.kts` files. Kotlin uses the prebuilt `tree-sitter-kotlin.wasm` shipped with the repo (`src/modules/code-parser/wasm/`).
 - **XML auto-detection:** The config parser detects the root element (`<configuration>` vs `<packages>`) to route between App.config and packages.config formats.
 - **TOML project files:** Cargo parsers handle `Cargo.toml` (package metadata, dependencies, workspace, features, profiles, build targets, patches), `Cargo.lock` (resolved dependency tree), `rust-toolchain.toml` (toolchain config), and `.cargo/config.toml` (build config, registries, aliases). File type resolution uses filename-based overrides for files sharing the `.toml` extension.
