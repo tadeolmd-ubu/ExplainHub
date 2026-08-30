@@ -108,6 +108,7 @@ Runs all tests in `test/` using Node's built-in test runner (`node:test`). Tests
 | `test/cloner.test.js` | Cloner: URL validation, repository name extraction, source detection |
 | `test/ai-enhancer.test.js` | AiEnhancer: `postProcess` formatting, fallbacks, deduplication |
 | `test/kt-parser.test.js` | Kotlin parser: imports, classes, functions, exports |
+| `test/dart-parser.test.js` | Dart parser: imports, classes, mixins, enums, extensions, functions, exports |
 | `test/sh-parser.test.js` | Bash parser: imports, functions, exports, curl/wget routes |
 | `test/md-flow.test.js` | Markdown flow: README sections, modules structure, no-package.json fallback |
 | `test/zip-flow.test.js` | ZIP extraction: valid zip, invalid zip error |
@@ -199,7 +200,7 @@ When generating Markdown (`format: "md"`), the README includes additional sectio
 
 Languages we plan to add in future releases:
 
-_Kotlin and Dart were the last additions — no further languages are planned at this time._
+_Kotlin, Dart, and Bash were the most recent additions — no further languages are planned at this time._
 
 ---
 

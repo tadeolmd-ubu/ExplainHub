@@ -569,7 +569,7 @@ Parses `.dart` files using `web-tree-sitter` with a Dart WASM grammar (committed
 | Imports | `import_or_export` → `library_import` | `source, alias, line` |
 | Exports | `import_or_export` → `library_export` | `name, kind: "export", line` |
 | Classes | `class_definition`, `mixin_declaration`, `enum_declaration`, `extension_declaration` (top-level) | `name, kind, extends (or `on` type), methods[], line` |
-| Methods | `method_signature`, `getter_signature`, `setter_signature`, `declaration` inside a class body | `name, kind ("method" / "getter" / "setter" / "constructor" / "factory constructor"), params[], returnType?, annotation?, line` (added to parent class's `methods[]`) |
+| Methods | `method_signature`, `declaration` (and the `constructor_signature` / `constant_constructor_signature` / `factory_constructor_signature` kinds within them) inside a class body | `name, kind ("method" / "constructor"), params[], returnType?, annotation?, line` (added to parent class's `methods[]`) |
 | Functions | `function_signature` / `declaration` (top-level) | `name, kind: "function", params[], returnType, line` |
 | Typedefs | `type_alias` | `name, kind: "typedef", line` |
 | Routes | Not applicable | Empty array |
@@ -579,6 +579,10 @@ Parses `.dart` files using `web-tree-sitter` with a Dart WASM grammar (committed
 - `mixin` — `mixin_declaration`
 - `enum` — `enum_declaration`
 - `extension` — `extension_declaration` (with the nullable `on` type stored in `extends`)
+
+**Extension `on` type:** In this grammar the `on` type is a plain `type_identifier` child of the `extension_declaration` (there is no `on` node) — it is captured into `extends` (e.g. `extension NumberParsing on String` → `extends: "String"`).
+
+**Known limitation:** getters (`get x`), setters (`set x`), and the leading `factory` constructor keyword are not currently extracted by the walker.
 
 **Generic types:** `class Foo<T>` stores the full name including type parameters (`Foo<T>`).
 
