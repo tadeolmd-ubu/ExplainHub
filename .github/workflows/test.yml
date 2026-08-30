@@ -16,4 +16,4 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: node --test
+      - run: node --test test/*.test.js

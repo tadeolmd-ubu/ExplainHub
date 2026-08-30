@@ -1,17 +1,12 @@
-import Parser from "tree-sitter";
-import Kotlin from "tree-sitter-kotlin";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { getTreeSitterParser } from "./treeSitterFactory.js";
 
-let parserInstance = null;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const KOTLIN_WASM = path.resolve(__dirname, "../wasm/tree-sitter-kotlin.wasm");
 
-function getParser() {
-  if (parserInstance) return parserInstance;
-  parserInstance = new Parser();
-  parserInstance.setLanguage(Kotlin);
-  return parserInstance;
-}
-
-export function parseKotlin(content) {
-  const parser = getParser();
+export async function parseKotlin(content) {
+  const parser = await getTreeSitterParser(KOTLIN_WASM);
   const tree = parser.parse(content);
 
   const imports = [];
