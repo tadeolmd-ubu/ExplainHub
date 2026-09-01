@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { simpleGit } from "simple-git";
 import AdmZip from "adm-zip";
+
+const MAX_EXTRACTED_BYTES = 100 * 1024 * 1024;
 /**
  * Encapsula la logica de clonado de repositorios Git dentro del proyecto.
  * Cada clon se guarda en una carpeta unica dentro de /temp para evitar colisiones.
@@ -212,9 +214,26 @@ export class RepositoryCloner {
       const zip = new AdmZip(zipPath);
       const entries = zip.getEntries();
       if (entries.length > 5000) {
-        throw new Error(`Zip contiene ${entries.length} archivos, máximo permitido 5000`);
+        throw new Error(
+          `Zip contiene ${entries.length} archivos, máximo permitido 5000`,
+        );
       }
-      zip.extractAllTo(repoPath, true);
+
+      let totalSize = 0;
+      for (const entry of entries) {
+        if (entry.isDirectory) continue;
+        const name = this.safeZipEntryName(entry.entryName, repoPath);
+        totalSize += Number(entry.header.size) || 0;
+        if (totalSize > MAX_EXTRACTED_BYTES) {
+          throw new Error(
+            "El zip excede el tamaño máximo permitido al descomprimir",
+          );
+        }
+        const destination = path.join(repoPath, name);
+        const content = zip.readFile(entry);
+        await fs.mkdir(path.dirname(destination), { recursive: true });
+        await fs.writeFile(destination, content);
+      }
     } catch (error) {
       await this.cleanup(tempPath);
       throw new Error(`No se pudo extraer el zip: ${error.message}`);
@@ -226,6 +245,26 @@ export class RepositoryCloner {
       repoPath,
       cloneName: extractName,
     };
+  }
+
+  safeZipEntryName(entryName, repoPath) {
+    const raw = String(entryName);
+    if (
+      raw.startsWith("/") ||
+      raw.startsWith("\\") ||
+      /^[a-zA-Z]:/.test(raw)
+    ) {
+      throw new Error(`Ruta no permitida dentro del zip: "${entryName}"`);
+    }
+    const normalized = raw.replace(/\\/g, "/");
+    if (path.posix.isAbsolute(normalized)) {
+      throw new Error(`Ruta no permitida dentro del zip: "${entryName}"`);
+    }
+    const resolved = path.resolve(repoPath, normalized);
+    if (resolved !== repoPath && !resolved.startsWith(repoPath + path.sep)) {
+      throw new Error(`Ruta no permitida dentro del zip: "${entryName}"`);
+    }
+    return normalized;
   }
 }
 
