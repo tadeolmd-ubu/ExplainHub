@@ -1,4 +1,22 @@
 import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+let pythonAvailable = true;
+
+async function ensurePython() {
+  if (!pythonAvailable) return false;
+  try {
+    await execFileAsync("python3", ["--version"]);
+  } catch {
+    pythonAvailable = false;
+    console.warn(
+      "[pyParser] python3 no encontrado en el sistema. El parseo de Python se omitirá.",
+    );
+    return false;
+  }
+  return true;
+}
 
 const EXTRACTION_SCRIPT = `
 import ast, json, sys
@@ -148,10 +166,14 @@ function execPython(input) {
 }
 
 export async function parsePython(content) {
+  if (!(await ensurePython())) {
+    return { imports: [], functions: [], classes: [], routes: [], exports: [] };
+  }
   const results = await execPython([{ content }]);
   return results[0] || { imports: [], functions: [], classes: [], routes: [], exports: [] };
 }
 
 export async function parsePythonBatch(files) {
+  if (!(await ensurePython())) return [];
   return execPython(files);
 }
