@@ -4,6 +4,7 @@ import { config } from "dotenv";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import * as c from "@clack/prompts";
+import { parseArgs } from "node:util";
 
 import { saveFile } from "../code-parser/utils/fileUtils.js";
 import { AnalyzerService } from "../../core/analyzer/analyzer.service.js";
@@ -42,6 +43,7 @@ function printBanner() {
 }
 
 async function main() {
+  if (process.argv.length > 2) return runNonInteractive();
   printBanner();
   const typeProject = await c.select({
     message: "Elige donde esta tu proyecto",
@@ -107,11 +109,7 @@ async function main() {
   const result = await service.analyze(projectPath, format, language);
   c.outro("Análisis completado");
   console.log(result.summary);
-  if (result.repoPath) {
-    console.log(`\nProyecto clonado en:`);
-    console.log(`  \x1b[36m${result.repoPath}\x1b[0m`);
-    console.log(`  cd ${result.repoPath}`);
-  }
+  printResultPaths(result);
   if (format !== "md") {
     const shouldSave = await c.confirm({
       message: "¿Guardar el resultado en un archivo?",
@@ -139,4 +137,33 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+function printResultPaths(result) {
+  if (result.repoPath) console.log(`\nProyecto disponible en: ${result.repoPath}`);
+  for (const output of result.outputPaths || []) console.log(`Documento: ${output}`);
+  for (const diagnostic of result.diagnostics || []) console.error(`[${diagnostic.stage}] ${diagnostic.filePath || ""} ${diagnostic.message}`);
+}
+
+async function runNonInteractive() {
+  const { values, positionals } = parseArgs({
+    allowPositionals: true,
+    options: {
+      format: { type: "string", default: "txt" }, language: { type: "string", default: "en" },
+      output: { type: "string" }, "no-ai": { type: "boolean", default: false }, help: { type: "boolean", short: "h" },
+    },
+  });
+  if (values.help) {
+    console.log("Usage: explain <project|url|zip> [--format txt|md] [--language en|es] [--output path] [--no-ai]\nMarkdown output is a directory; text output is a new file.");
+    return;
+  }
+  if (positionals.length !== 1) throw new Error("Provide exactly one project path, URL or ZIP. Use --help for usage.");
+  if (!["txt", "md"].includes(values.format) || !["en", "es"].includes(values.language)) throw new Error("Invalid format or language");
+  const result = await service.analyze(positionals[0], values.format, values.language, { ai: !values["no-ai"], outputDir: values.format === "md" ? values.output : undefined });
+  console.log(result.summary);
+  printResultPaths(result);
+  if (values.output && values.format === "txt") await saveFile(result.summary, values.output);
+}
+
+main().catch(error => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

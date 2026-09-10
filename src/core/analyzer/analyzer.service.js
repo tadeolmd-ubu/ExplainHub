@@ -13,7 +13,7 @@ import path from "node:path";
 import { config } from "../../config/env.js";
 
 export class AnalyzerService {
-  async analyze(input, format = "txt", language = "en") {
+  async analyze(input, format = "txt", language = "en", options = {}) {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
@@ -47,6 +47,9 @@ export class AnalyzerService {
       const parser = new CodeParser();
       const files = await parser.parse(tree, projectPath);
       const generator = new TextGenerator();
+      const diagnostics = [...parser.diagnostics];
+      const metadata = { diagnostics, skippedFiles: parser.skippedFiles, parserFailures: parser.diagnostics.length, aiUsed: false };
+      const useAi = options.ai !== false && Boolean(config.ollama.model);
 
       if (format === "md") {
         const { readme, modules } = generator.generate({
@@ -56,19 +59,21 @@ export class AnalyzerService {
           tree,
           projectPath,
           format: "md",
+          language,
         });
 
         let finalReadme = readme;
         let finalModules = modules;
 
-        if (config.ollama.model) {
+        if (useAi) {
           const enhancer = new AiEnhancer();
           console.log("Mejorando README con IA...");
           try {
             finalReadme = await enhancer.enhanceMarkdown(readme, language);
+            metadata.aiUsed = true;
             console.log("✓ README mejorado");
           } catch (e) {
-            console.error(e.message);
+            diagnostics.push({ stage: "ai", message: e.message });
             finalReadme = readme;
           }
           finalModules = [];
@@ -83,8 +88,9 @@ export class AnalyzerService {
                 language,
               );
               finalModules.push({ ...mod, content });
+              metadata.aiUsed = true;
             } catch (e) {
-              console.error(`  ✗ ${mod.name}: ${e.message}`);
+              diagnostics.push({ stage: "ai", filePath: mod.name, message: e.message });
               finalModules.push({ ...mod, content: mod.content });
             }
           }
@@ -95,6 +101,7 @@ export class AnalyzerService {
           modules: finalModules,
         });
         return {
+          ...metadata,
           summary: `Document generated: ${written} files`,
           repoPath: projectPath,
         };
@@ -104,14 +111,16 @@ export class AnalyzerService {
         technologies,
         entryPoints,
         files,
+        language,
       });
+      if (!useAi) return { ...metadata, summary: plainText, repoPath: projectPath };
       try {
         const enhancer = new AiEnhancer();
         const summary = await enhancer.enhance(plainText, format, language);
-        return { summary, repoPath: projectPath };
+        return { ...metadata, aiUsed: true, summary, repoPath: projectPath };
       } catch (err) {
-        console.error("AI Enhancer error:", err.message);
-        return { summary: plainText, repoPath: projectPath };
+        diagnostics.push({ stage: "ai", message: err.message });
+        return { ...metadata, summary: plainText, repoPath: projectPath };
       }
     } finally {
       if (result && input.endsWith(".zip"))

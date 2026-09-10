@@ -8,10 +8,13 @@ import {
 import { parseByType } from "./parsers/parserFactory.js";
 import { parsePythonBatch } from "./parsers/pyParser.js";
 import { ParserError } from "./errors/parserError.js";
+import { resolveRoutes } from "./resolveRoutes.js";
 export { saveFile } from "./utils/fileUtils.js";
 
 export class CodeParser {
   async parse(tree, projectPath) {
+    this.diagnostics = [];
+    this.skippedFiles = [];
     const files = [];
     for (const child of tree.children || []) {
       files.push(...traverse(child));
@@ -21,7 +24,7 @@ export class CodeParser {
     const pyFiles = [];
 
     for (const file of files) {
-      if (!isParseable(file)) continue;
+      if (!isParseable(file)) { this.skippedFiles.push(file); continue; }
       const filePath = path.join(projectPath, file);
       const fileType = getFileType(filePath);
       if (fileType === "python") {
@@ -31,21 +34,32 @@ export class CodeParser {
           const result = await this.#processFile(filePath);
           results.push(result);
         } catch (error) {
-          console.error(`Error processing ${file}:`, error);
+          this.diagnostics.push({ filePath, stage: "parser", message: error.message });
         }
       }
     }
 
-    if (pyFiles.length > 0) {
-      const contents = await Promise.all(pyFiles.map((fp) => readFile(fp)));
-      const parsed = await parsePythonBatch(
-        contents.map((c, i) => ({ filePath: pyFiles[i], content: c })),
-      );
-      for (let i = 0; i < pyFiles.length; i++) {
+    for (let offset = 0; offset < pyFiles.length; offset += 8) {
+      const batch = [];
+      for (const filePath of pyFiles.slice(offset, offset + 8)) {
+        try { batch.push({ filePath, content: await readFile(filePath) }); }
+        catch (error) { this.diagnostics.push({ filePath, stage: "parser", message: error.message }); }
+      }
+      let parsed;
+      try { parsed = batch.length ? await parsePythonBatch(batch) : []; }
+      catch (error) {
+        for (const item of batch) this.diagnostics.push({ filePath: item.filePath, stage: "parser", message: error.message });
+        continue;
+      }
+      for (let i = 0; i < batch.length; i++) {
+        if (!parsed[i] || parsed[i].error) {
+          this.diagnostics.push({ filePath: batch[i].filePath, stage: "parser", message: parsed[i]?.error || "Missing Python result" });
+          continue;
+        }
         const { imports, exports, classes, routes, functions, ...rest } =
           parsed[i] || {};
         results.push({
-          filePath: pyFiles[i],
+          filePath: batch[i].filePath,
           type: "python",
           imports: imports || [],
           exports: exports || [],
@@ -57,6 +71,7 @@ export class CodeParser {
       }
     }
 
+    resolveRoutes(results);
     return results;
   }
   async #processFile(filePath) {
