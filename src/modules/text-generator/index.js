@@ -17,6 +17,7 @@ import { readmeFormatter } from "./formatters/md/readme.js";
 import { moduleFormatter } from "./formatters/md/modules.js";
 import { buildModuleCatalog } from "./moduleCatalog.js";
 import { readProjectMetadata } from "./metadata.js";
+import { localizeReport } from "./localize.js";
 
 export class TextGenerator {
   generate({
@@ -26,15 +27,20 @@ export class TextGenerator {
     tree,
     projectPath,
     format = "txt",
+    language = "en",
   }) {
     if (format === "md") {
-      return this.#generateMarkdown({
+      const generated = this.#generateMarkdown({
         tree,
         technologies,
         entryPoints,
         files,
         projectPath,
       });
+      return {
+        readme: localizeReport(generated.readme, language, "md"),
+        modules: generated.modules.map(module => ({ ...module, content: localizeReport(module.content, language, "md") })),
+      };
     }
     const sections = [
       headerFormatter({ technologies, entryPoints }),
@@ -52,7 +58,7 @@ export class TextGenerator {
       dropsFormatter(files),
       commentsFormatter(files),
     ];
-    return sections.filter(Boolean).join("\n\n");
+    return localizeReport(sections.filter(Boolean).join("\n\n"), language);
   }
   #generateMarkdown({ technologies, entryPoints, files, tree, projectPath }) {
     const catalog = buildModuleCatalog(files, projectPath);

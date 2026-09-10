@@ -18,7 +18,7 @@ export function moduleFormatter({ name, files }) {
 function fileStructureSection(files) {
   const rows = files.map((f) => {
     const purpose = isEmptyFile(f)
-      ? "Pendiente de implementar"
+      ? "No declarations detected"
       : getFileTypeDesc(f.type, f.filePath);
     return `| \`${path.basename(f.filePath)}\` | ${purpose} |`;
   });
