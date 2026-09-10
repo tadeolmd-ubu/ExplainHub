@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { constants } from "node:fs";
+import { StringDecoder } from "node:string_decoder";
 import { repositoryLimits, limitError } from "../../security/limits.js";
 import { fileTypes } from "../fileTypes.js";
 
@@ -67,7 +68,19 @@ export async function readFile(filePath) {
   try {
     const stat = await handle.stat();
     if (!stat.isFile() || stat.size > repositoryLimits.maxFileBytes) throw limitError("Unsupported or oversized file");
-    return await handle.readFile("utf-8");
+    const decoder = new StringDecoder("utf8");
+    const chunks = [];
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    let total = 0;
+    while (true) {
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, null);
+      if (bytesRead === 0) break;
+      total += bytesRead;
+      if (total > repositoryLimits.maxFileBytes) throw limitError("Unsupported or oversized file");
+      chunks.push(decoder.write(buffer.subarray(0, bytesRead)));
+    }
+    chunks.push(decoder.end());
+    return chunks.join("");
   } finally {
     await handle.close();
   }
