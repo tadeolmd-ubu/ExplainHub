@@ -4,42 +4,40 @@ import { CodeParser } from "../../modules/code-parser/index.js";
 import { TextGenerator } from "../../modules/text-generator/index.js";
 import { AiEnhancer } from "../../modules/ai-enhancer/index.js";
 import {
-  validatePath,
   validateRepositorySize,
 } from "../../modules/security/index.js";
 
 import { writeDocs } from "../../modules/text-generator/writeDocs.js";
 import { config } from "../../config/env.js";
+import { normalizeSource, validateAnalysisOptions } from "../../modules/security/source.js";
+import { validateRealPath } from "../../modules/security/pathValidator.js";
 
 export class AnalyzerService {
   async analyze(input, format = "txt", language = "en", options = {}) {
+    validateAnalysisOptions(format, language);
+    const source = normalizeSource(input);
+    input = source.value;
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
 
-    if (input.endsWith(".zip")) {
+    if (source.type === "zip") {
+      await validateRealPath(input);
       result = await cloner.extractZip(input);
       projectPath = result.repoPath;
-    } else if (
-      input.startsWith("http://") ||
-      input.startsWith("https://") ||
-      input.startsWith("git@") ||
-      input.startsWith("git://")
-    ) {
+    } else if (source.type === "remote") {
       result = await cloner.clone(input);
       projectPath = result.repoPath;
     } else {
-      const { safe, reason } = validatePath(input);
-      if (!safe) throw new Error(reason);
-    }
-
-    const sizeResult = await validateRepositorySize(projectPath);
-    if (!sizeResult.safe) {
-      if (result) await cloner.cleanup(result.tempPath);
-      throw new Error(sizeResult.reason);
+      projectPath = await validateRealPath(input);
     }
 
     try {
+      const sizeResult = await validateRepositorySize(projectPath);
+      if (!sizeResult.safe) {
+        throw Object.assign(new Error(sizeResult.reason), { status: 413 });
+      }
+
       const extractor = new StructureExtractor();
       const { tree, technologies, entryPoints } =
         await extractor.extract(projectPath);
@@ -96,7 +94,7 @@ export class AnalyzerService {
         });
         return {
           summary: `Document generated: ${written.outputPaths.length} files`,
-          repoPath: input.endsWith(".zip") ? null : projectPath,
+          repoPath: source.type === "zip" ? null : projectPath,
           ...written,
         };
       }
@@ -109,13 +107,16 @@ export class AnalyzerService {
       try {
         const enhancer = new AiEnhancer();
         const summary = await enhancer.enhance(plainText, format, language);
-        return { summary, repoPath: input.endsWith(".zip") ? null : projectPath };
+        return { summary, repoPath: source.type === "zip" ? null : projectPath };
       } catch (err) {
         console.error("AI Enhancer error:", err.message);
-        return { summary: plainText, repoPath: input.endsWith(".zip") ? null : projectPath };
+        return { summary: plainText, repoPath: source.type === "zip" ? null : projectPath };
       }
+    } catch (error) {
+      if (result && source.type === "remote") await cloner.cleanup(result.tempPath);
+      throw error;
     } finally {
-      if (result && input.endsWith(".zip"))
+      if (result && source.type === "zip")
         await cloner.cleanup(result.tempPath);
     }
   }
