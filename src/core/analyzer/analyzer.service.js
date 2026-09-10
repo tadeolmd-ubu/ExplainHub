@@ -8,12 +8,11 @@ import {
   validateRepositorySize,
 } from "../../modules/security/index.js";
 
-import fs from "node:fs/promises";
-import path from "node:path";
+import { writeDocs } from "../../modules/text-generator/writeDocs.js";
 import { config } from "../../config/env.js";
 
 export class AnalyzerService {
-  async analyze(input, format = "txt", language = "en") {
+  async analyze(input, format = "txt", language = "en", options = {}) {
     let projectPath = input;
     const cloner = new RepositoryCloner();
     let result = null;
@@ -93,10 +92,12 @@ export class AnalyzerService {
           projectPath,
           readme: finalReadme,
           modules: finalModules,
+          outputDir: options.outputDir,
         });
         return {
-          summary: `Document generated: ${written} files`,
-          repoPath: projectPath,
+          summary: `Document generated: ${written.outputPaths.length} files`,
+          repoPath: input.endsWith(".zip") ? null : projectPath,
+          ...written,
         };
       }
 
@@ -108,24 +109,14 @@ export class AnalyzerService {
       try {
         const enhancer = new AiEnhancer();
         const summary = await enhancer.enhance(plainText, format, language);
-        return { summary, repoPath: projectPath };
+        return { summary, repoPath: input.endsWith(".zip") ? null : projectPath };
       } catch (err) {
         console.error("AI Enhancer error:", err.message);
-        return { summary: plainText, repoPath: projectPath };
+        return { summary: plainText, repoPath: input.endsWith(".zip") ? null : projectPath };
       }
     } finally {
       if (result && input.endsWith(".zip"))
         await cloner.cleanup(result.tempPath);
     }
   }
-}
-
-async function writeDocs({ projectPath, readme, modules }) {
-  const docsDir = path.join(projectPath, "docs");
-  await fs.mkdir(docsDir, { recursive: true });
-  await fs.writeFile(path.join(projectPath, "README.md"), readme);
-  for (const mod of modules) {
-    await fs.writeFile(path.join(docsDir, `${mod.name}.md`), mod.content);
-  }
-  return modules.length + 1;
 }
