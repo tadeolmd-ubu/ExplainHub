@@ -1,39 +1,78 @@
-export function extractRoutes(ast) {
-  const routes = [];
-  const httpMethods = ["get", "post", "put", "delete", "patch"];
-  try {
-    const visit = (node) => {
-      if (!node || typeof node !== "object") return;
-      if (
-        node.type === "CallExpression" &&
-        node.callee?.type === "MemberExpression" &&
-        node.callee.property?.name &&
-        httpMethods.includes(node.callee.property.name.toLowerCase())
-      ) {
-        const pathArg = node.arguments[0];
-        if (!pathArg || pathArg.type !== "StringLiteral") return;
-        routes.push({
-          method: node.callee.property.name.toUpperCase(),
-          path: pathArg.value,
-          line: node.loc?.start.line || 0,
-        });
-      }
-      for (const key in node) {
-        if (key === "loc" || key === "range" || key === "comments") continue;
-        const child = node[key];
-        if (Array.isArray(child)) {
-          for (const item of child) {
-            visit(item);
-          }
-        } else if (typeof child === "object") {
-          visit(child);
+const methods = new Set(["get", "post", "put", "delete", "patch", "head", "options", "all"]);
+
+export function analyzeExpress(ast) {
+  const nodes = [];
+  const walk = node => {
+    if (!node || typeof node !== "object") return;
+    if (node.type) nodes.push(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (["loc", "comments", "tokens"].includes(key)) continue;
+      if (Array.isArray(value)) value.forEach(walk);
+      else if (value && typeof value === "object") walk(value);
+    }
+  };
+  walk(ast);
+  const factories = new Set();
+  const routerFactories = new Set();
+  const receivers = new Set();
+  const routeExports = {};
+  const routeImports = {};
+  for (const node of nodes) {
+    if (node.type === "ImportDeclaration") {
+      for (const spec of node.specifiers) {
+        const local = spec.local.name;
+        if (node.source.value === "express") {
+          if (spec.imported?.name === "Router") routerFactories.add(local);
+          else if (spec.type !== "ImportSpecifier") factories.add(local);
+        } else {
+          routeImports[local] = { source: node.source.value, imported: spec.imported?.name || "default" };
         }
       }
-    };
-    visit(ast);
-    return routes;
-  } catch (error) {
-    console.error("Error extracting routes:", error);
-    return [];
+    }
+    if (node.type === "VariableDeclarator" && node.init?.callee?.name === "require") {
+      const source = node.init.arguments[0]?.value;
+      if (source === "express") {
+        if (node.id.type === "Identifier") factories.add(node.id.name);
+        for (const property of node.id.properties || []) {
+          if (property.key?.name === "Router") routerFactories.add(property.value.name);
+        }
+      } else if (typeof source === "string" && node.id.type === "Identifier") {
+        routeImports[node.id.name] = { source, imported: "default" };
+      }
+    }
   }
+  for (const node of nodes) {
+    if (node.type !== "VariableDeclarator" || node.id.type !== "Identifier" || node.init?.type !== "CallExpression") continue;
+    const callee = node.init.callee;
+    if (factories.has(callee.name) || routerFactories.has(callee.name) ||
+        (factories.has(callee.object?.name) && callee.property?.name === "Router")) receivers.add(node.id.name);
+  }
+  const routes = [];
+  const routeMounts = [];
+  for (const node of nodes) {
+    if (node.type === "ExportDefaultDeclaration" && receivers.has(node.declaration?.name)) routeExports.default = node.declaration.name;
+    if (node.type === "ExportNamedDeclaration") {
+      for (const spec of node.specifiers || []) if (receivers.has(spec.local?.name)) routeExports[spec.exported.name] = spec.local.name;
+      for (const declaration of node.declaration?.declarations || []) if (receivers.has(declaration.id.name)) routeExports[declaration.id.name] = declaration.id.name;
+    }
+    if (node.type === "AssignmentExpression" && node.left?.object?.name === "module" && node.left?.property?.name === "exports" && receivers.has(node.right?.name)) routeExports.default = node.right.name;
+    if (node.type !== "CallExpression" || node.callee?.type !== "MemberExpression") continue;
+    const receiver = node.callee.object?.name;
+    if (!receivers.has(receiver)) continue;
+    const method = node.callee.property?.name;
+    const first = node.arguments[0];
+    if (method === "use") {
+      const prefix = first?.type === "StringLiteral" ? first.value : "";
+      for (const arg of node.arguments.slice(prefix ? 1 : 0)) {
+        if (arg.type === "Identifier") routeMounts.push({ receiver, target: arg.name, prefix });
+      }
+    } else if (methods.has(method) && first?.type === "StringLiteral" && node.arguments.length > 1) {
+      routes.push({ method: method.toUpperCase(), path: first.value, receiver, line: node.loc?.start.line || 0 });
+    }
+  }
+  return { routes, routeMounts, routeImports, routeExports };
+}
+
+export function extractRoutes(ast) {
+  return analyzeExpress(ast).routes;
 }

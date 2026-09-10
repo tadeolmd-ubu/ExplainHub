@@ -12,7 +12,7 @@ explainHub analyzes any Git repository — clones it, parses its source code via
 Repository (local, remote, or .zip)
     │
     ▼
-RepositoryCloner      →  Clones repo / extracts .zip to temp directory
+RepositoryCloner      →  Clones repo / streams .zip into a unique OS temp directory
     │                     (remote repos kept on disk after analysis)
     ▼
 StructureExtractor    →  Builds file tree, detects technologies & entry points
@@ -30,7 +30,7 @@ AiEnhancer            →  Sends report to local LLM (Ollama)
                         Returns enhanced narrative in txt or md
     │
     ▼
-Output                →  Console + optional save to .txt / README.md + docs/*
+Output                →  Console + optional new .txt / independent README.md + docs/*
                         (remote repos: path printed for navigation)
 ```
 
@@ -40,13 +40,13 @@ Output                →  Console + optional save to .txt / README.md + docs/*
 
 | Step | Module | What it does |
 |------|--------|-------------|
-| 1 | RepositoryCloner | Clones remote repos into `/temp` (kept on disk); extracts `.zip` files (cleaned up) |
+| 1 | RepositoryCloner | Uses unique OS temporary directories; successful remote clones retained, ZIP workspaces cleaned up |
 | 2 | StructureExtractor | Builds recursive file tree, detects tech stack |
 | 3 | CodeParser | Parses JS/TS/HTML/CSS/SQL/Python/PHP/C#/Rust/Java/Go/C/C++/Ruby/Shell/PowerShell/Kotlin/Dart/INI/.NET/Cargo via `@babel/parser`, SQL AST, `web-tree-sitter`, `php-parser`, `tree-sitter-kotlin`, `smol-toml`, and shell-to-`ast` |
 | 4 | TextGenerator | Produces structured plain text report or Markdown docs (README.md + `docs/*.md`) with Project Info, Dependencies, Features sections |
-| 5 | AiEnhancer | Sends report to Ollama for AI-powered summary in txt or md |
+| 5 | AiEnhancer | Produces a TXT narrative or adds a labeled Markdown description while preserving extracted facts |
 | — | Security | Validates paths and repository size before processing |
-| — | CLI | Interactive menu: URL, local path, .zip, format selection (txt/md), save to file. Prints cloned repo path after analysis |
+| — | CLI | Interactive menu or flags for input, format, language, output and disabling AI |
 
 ---
 
@@ -93,13 +93,47 @@ explain
 
 Follow the prompts: select input type (URL, local path, .zip), choose format (txt/md), and optionally save the result to a file.
 
+For scripts and CI:
+
+```bash
+explain ./my-project --format md --language es --output ./reports --no-ai
+explain ./my-project --format txt --output ./summary.txt --no-ai
+explain --help
+```
+
+Markdown is written to a new `report-*` directory under `--output`, or under
+`./explainhub-output` by default. The source README and docs are preserved.
+TXT output refuses to overwrite an existing file. ZIP reports survive workspace
+cleanup; no deleted repository path is advertised. Noninteractive errors exit with code 1.
+
+Spanish/English selection localizes report labels without translating source
+identifiers or manifest text. AI narrative uses the selected language.
+
+### Local HTTP API
+
+`npm start` listens on `127.0.0.1:3000` by default. `POST /api/analyze` accepts:
+
+```json
+{ "projectPath": "./my-project", "language": "es", "ai": false }
+```
+
+The API accepts local paths/ZIPs within `ANALYSIS_ROOT` (default: current working
+directory), resolved through symlinks. Use the CLI for remote repositories.
+At most two analyses run concurrently; excess requests receive HTTP 429.
+If `API_TOKEN` is configured, send `Authorization: Bearer <token>`.
+Set `HOST` explicitly to expose the server; use authentication and HTTPS for a
+shared deployment. Responses include diagnostics, skipped files and AI usage.
+
 ### 2. Run tests
 
 ```bash
-node --test
+npm test
+npm audit --audit-level=moderate
 ```
 
-Runs all tests in `test/` using Node's built-in test runner (`node:test`). Tests that require Ollama will be skipped automatically if `OLLAMA_MODEL` is not set.
+Runs `test/*.test.js` using Node's built-in test runner (`node:test`). Automated AI
+tests use simulated clients; they require neither a model nor a running Ollama.
+Files ending in `.manual.js` are exploratory scripts and are not part of this command.
 
 **Test files:**
 | File | Coverage |
@@ -175,7 +209,7 @@ The `CodeParser` can analyze the following file types:
 | `.ini`, `.cfg` | INI | `web-tree-sitter` (WASM) |
 | `.ps1`, `.psm1` | PowerShell | `web-tree-sitter` (WASM) |
 | `.sh`, `.bash` | Shell (Bash) | `web-tree-sitter` (WASM) |
-| `.kt`, `.kts` | Kotlin | `tree-sitter-kotlin` |
+| `.kt`, `.kts` | Kotlin | `web-tree-sitter` + bundled Kotlin WASM |
 | `.dart` | Dart | `web-tree-sitter` (WASM) |
 | `.sln` | Solution | regex |
 | `.csproj` | C# Project | `fast-xml-parser` |
@@ -208,7 +242,7 @@ _Kotlin, Dart, and Bash were the most recent additions — no further languages 
 
 | Technology | Purpose |
 |------------|---------|
-| Node.js 20+ | Runtime |
+| Node.js 22+ | Runtime |
 | @babel/parser | AST parsing for JS/TS |
 | node-sql-parser | SQL AST parsing with dialect support |
 | php-parser | PHP AST parsing (pure JS, zero deps) |
@@ -218,7 +252,8 @@ _Kotlin, Dart, and Bash were the most recent additions — no further languages 
 | smol-toml | TOML parsing for Cargo.toml, Cargo.lock, rust-toolchain.toml, .cargo/config.toml |
 | python3 (ast module) | Python AST parsing via shell subprocess |
 | simple-git | Git operations |
-| adm-zip | ZIP file extraction |
+| yauzl | Streaming ZIP extraction with actual decompressed-byte limits |
+| yazl (dev) | ZIP fixtures for automated tests |
 | Ollama | Local LLM inference |
 | @clack/prompts | Interactive CLI prompts |
 
@@ -228,15 +263,37 @@ _Kotlin, Dart, and Bash were the most recent additions — no further languages 
 
 - **Modular**: Each feature is a self-contained module in `src/modules/`
 - **Pipeline-oriented**: Modules connect sequentially, each transforming the output of the previous
-- **Pure formatters**: Text generation uses stateless functions with no side effects
-- **Fail-soft**: AST extractors catch errors per file without crashing the whole analysis; Python syntax errors return empty structures
+- **Separated output**: Renderers consume extracted metadata; writing uses a dedicated output module
+- **Fail-soft with diagnostics**: Parser errors are returned separately from valid files; SQL text fallbacks produce warnings
 - **Environment-configured**: Model selection and server URLs come from `.env`
 
 ---
 
 ## CI / CD
 
-Tests run automatically via GitHub Actions on every push and pull request to `main` and `dev`. See [`.github/workflows/test.yml`](.github/workflows/test.yml) for details.
+Tests run automatically via GitHub Actions on every push and on pull requests to
+`main`. See [`.github/workflows/test.yml`](.github/workflows/test.yml).
+
+## Resource limits and scope
+
+Default budgets: 5,000 files, 100 MiB total, 10 MiB per file, depth 64 and
+10,000 traversed entries. Symlinks and non-regular files are skipped. ZIPs are
+streamed into fresh workspaces; traversal paths, symlinks, oversized files and
+dishonest size headers are rejected. Git processes have a 60-second timeout;
+checkout limits do not impose a network-transfer quota.
+
+Ollama requests default to 60 seconds (`OLLAMA_TIMEOUT_MS`). Markdown enhancement
+has a two-minute budget and stops attempting subsequent modules after a failure.
+Input/output budgets prevent unbounded AI payloads. Python runs in batches of at
+most eight files with a 30-second subprocess timeout.
+
+JavaScript route detection covers common statically declared Express apps and
+routers, including static imported mounts. Dynamic routing, runtime aliases and
+arbitrary frameworks require further analysis. The output is a static report,
+not proof of runtime behavior or correctness of an AI interpretation.
+
+See [the remediation plan](docs/plan-correccion-errores.md) and
+[implementation report](docs/informe-correcciones.md) for changes and verification.
 
 ## Contributing
 

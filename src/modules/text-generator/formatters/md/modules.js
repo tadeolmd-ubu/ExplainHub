@@ -18,7 +18,7 @@ export function moduleFormatter({ name, files }) {
 function fileStructureSection(files) {
   const rows = files.map((f) => {
     const purpose = isEmptyFile(f)
-      ? "Pendiente de implementar"
+      ? "No declarations detected"
       : getFileTypeDesc(f.type, f.filePath);
     return `| \`${path.basename(f.filePath)}\` | ${purpose} |`;
   });
@@ -93,39 +93,6 @@ function getFileTypeDesc(type, filePath) {
     return base;
   }
   if (type === "php") {
-    if (name.includes("config") || name.includes("settings"))
-      return "Application configuration";
-    if (name.includes("route") || name.includes("router"))
-      return "Route definitions";
-    if (name.includes("controller"))
-      return "Request handlers and business logic";
-    if (name.includes("model"))
-      return "Data models and validation";
-    if (name.includes("migration"))
-      return "Database migration script";
-    if (name.includes("middleware"))
-      return "Request middleware handlers";
-    if (name.includes("test") || name.includes("spec"))
-      return "Unit and integration tests";
-    if (
-      name.includes("login") ||
-      name.includes("logout") ||
-      name.includes("auth") ||
-      name.includes("register") ||
-      name.includes("sesion") ||
-      name.includes("session")
-    )
-      return "User authentication and session handling";
-    if (name.includes("admin") || name.includes("panel"))
-      return "Administration panel views and logic";
-    if (name.includes("dashboard"))
-      return "Main dashboard view";
-    if (name.includes("conexion") || name.includes("connection") || name.includes("database") || name.includes("db"))
-      return "Database connection handling";
-    if (name.includes("inscripcion") || name.includes("enroll") || name.includes("inscription"))
-      return "Membership enrollment form handling";
-    if (name.includes("membresia") || name.includes("membership"))
-      return "Membership management logic";
     return base;
   }
   if (type === "stylesheet") {

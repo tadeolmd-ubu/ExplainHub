@@ -2,9 +2,8 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { simpleGit } from "simple-git";
-import AdmZip from "adm-zip";
-
-const MAX_EXTRACTED_BYTES = 100 * 1024 * 1024;
+import { extractArchive } from "./extractArchive.js";
+import { tmpdir } from "node:os";
 /**
  * Encapsula la logica de clonado de repositorios Git dentro del proyecto.
  * Cada clon se guarda en una carpeta unica dentro de /temp para evitar colisiones.
@@ -16,10 +15,11 @@ export class RepositoryCloner {
    * @param {import("simple-git").SimpleGitOptions} [options.gitOptions] Opciones opcionales para simple-git.
    */
   constructor(options = {}) {
-    this.baseTempDir = options.baseTempDir ?? path.join(process.cwd(), "temp");
+    this.baseTempDir = path.resolve(options.baseTempDir ?? path.join(tmpdir(), "explainhub"));
     this.git = simpleGit({
       baseDir: process.cwd(),
       ...options.gitOptions,
+      timeout: { block: options.cloneTimeoutMs ?? 60000, stdOut: false, stdErr: false },
     });
   }
 
@@ -38,21 +38,11 @@ export class RepositoryCloner {
     await this.ensureBaseTempDirectory();
 
     const cloneName = this.extractRepositoryName(sanitizedRepositoryUrl);
-    const tempPath = path.join(this.baseTempDir, cloneName);
+    const tempPath = await fs.mkdtemp(path.join(this.baseTempDir, `${cloneName || "repo"}-`));
     const repoPath = path.join(tempPath, "repository");
-    if (existsSync(tempPath)) {
-      await this.cleanup(tempPath);
-    }
-
-    await fs.mkdir(tempPath, { recursive: true });
 
     try {
-      await Promise.race([
-        this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Clone timeout: excedió 60 segundos")), 60000),
-        ),
-      ]);
+      await this.git.clone(sanitizedRepositoryUrl, repoPath, ["--depth", "1"]);
     } catch (error) {
       await this.cleanup(tempPath);
       throw new Error(
@@ -125,6 +115,9 @@ export class RepositoryCloner {
    * @returns {Promise<void>}
    */
   async cleanup(targetPath) {
+    if (path.dirname(path.resolve(targetPath)) !== this.baseTempDir) {
+      throw new Error("Cleanup target must be an owned temporary directory");
+    }
     await fs.rm(targetPath, { recursive: true, force: true });
   }
 
@@ -203,40 +196,15 @@ export class RepositoryCloner {
   async extractZip(zipPath) {
     await this.ensureBaseTempDirectory();
     const extractName = this.extractRepositoryName(zipPath);
-    const tempPath = path.join(this.baseTempDir, extractName);
-    const repoPath = path.join(tempPath, "repository");
-    if (existsSync(tempPath)) {
-      await this.cleanup(tempPath);
-    }
-
-    await fs.mkdir(tempPath, { recursive: true });
+    const tempPath = await fs.mkdtemp(path.join(this.baseTempDir, `${extractName || "zip"}-`));
+    let repoPath = path.join(tempPath, "repository");
     try {
-      const zip = new AdmZip(zipPath);
-      const entries = zip.getEntries();
-      if (entries.length > 5000) {
-        throw new Error(
-          `Zip contiene ${entries.length} archivos, máximo permitido 5000`,
-        );
-      }
-
-      let totalSize = 0;
-      for (const entry of entries) {
-        if (entry.isDirectory) continue;
-        const name = this.safeZipEntryName(entry.entryName, repoPath);
-        totalSize += Number(entry.header.size) || 0;
-        if (totalSize > MAX_EXTRACTED_BYTES) {
-          throw new Error(
-            "El zip excede el tamaño máximo permitido al descomprimir",
-          );
-        }
-        const destination = path.join(repoPath, name);
-        const content = zip.readFile(entry);
-        await fs.mkdir(path.dirname(destination), { recursive: true });
-        await fs.writeFile(destination, content);
-      }
+      await extractArchive(zipPath, repoPath, (name, root) => this.safeZipEntryName(name, root));
+      const roots = await fs.readdir(repoPath, { withFileTypes: true });
+      if (roots.length === 1 && roots[0].isDirectory()) repoPath = path.join(repoPath, roots[0].name);
     } catch (error) {
       await this.cleanup(tempPath);
-      throw new Error(`No se pudo extraer el zip: ${error.message}`);
+      throw Object.assign(new Error(`No se pudo extraer el zip: ${error.message}`), { status: error.status || 400 });
     }
 
     return {

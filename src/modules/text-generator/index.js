@@ -15,8 +15,9 @@ import { commentsFormatter } from "./formatters/txt/commentsFormatter.js";
 
 import { readmeFormatter } from "./formatters/md/readme.js";
 import { moduleFormatter } from "./formatters/md/modules.js";
-import { buildNameCount } from "./formatters/utils.js";
-import path from "node:path";
+import { buildModuleCatalog } from "./moduleCatalog.js";
+import { readProjectMetadata } from "./metadata.js";
+import { localizeReport } from "./localize.js";
 
 export class TextGenerator {
   generate({
@@ -25,16 +26,23 @@ export class TextGenerator {
     files,
     tree,
     projectPath,
+    projectName,
     format = "txt",
+    language = "en",
   }) {
     if (format === "md") {
-      return this.#generateMarkdown({
+      const generated = this.#generateMarkdown({
         tree,
         technologies,
         entryPoints,
         files,
         projectPath,
+        projectName,
       });
+      return {
+        readme: localizeReport(generated.readme, language, "md"),
+        modules: generated.modules.map(module => ({ ...module, content: localizeReport(module.content, language, "md") })),
+      };
     }
     const sections = [
       headerFormatter({ technologies, entryPoints }),
@@ -52,39 +60,23 @@ export class TextGenerator {
       dropsFormatter(files),
       commentsFormatter(files),
     ];
-    return sections.filter(Boolean).join("\n\n");
+    return localizeReport(sections.filter(Boolean).join("\n\n"), language);
   }
-  #generateMarkdown({ technologies, entryPoints, files, tree, projectPath }) {
+  #generateMarkdown({ technologies, entryPoints, files, tree, projectPath, projectName }) {
+    const catalog = buildModuleCatalog(files, projectPath);
     const readme = readmeFormatter({
       technologies,
       entryPoints,
       files,
       tree,
       projectPath,
+      projectName,
+      catalog,
+      metadata: readProjectMetadata(projectPath),
     });
-    const modules = buildModules({ files, projectPath });
+    const modules = catalog.map(({ name, label, files }) => ({
+      name, content: moduleFormatter({ name: label, files }),
+    }));
     return { readme, modules };
   }
-}
-function buildModules({ files, projectPath }) {
-  const dirs = {};
-  for (const file of files) {
-    const dir = path.dirname(file.filePath);
-    if (!dirs[dir]) dirs[dir] = [];
-    dirs[dir].push(file);
-  }
-  if (projectPath && dirs[projectPath]) {
-    delete dirs[projectPath];
-  }
-  const nameCount = buildNameCount(dirs);
-
-  return Object.entries(dirs).map(([dirPath, dirFiles]) => {
-    let name = path.basename(dirPath);
-    if (nameCount[name] > 1) {
-      const parent = path.basename(path.dirname(dirPath));
-      name = `${parent}-${name}`;
-    }
-    const content = moduleFormatter({ name, files: dirFiles });
-    return { name, content };
-  });
 }

@@ -359,6 +359,7 @@ export function parseSql(content) {
   const dialect = detectDialect(content);
   const comments = extractComments(content);
   const acc = crearAcumuladores();
+  const warnings = [];
 
   if (dialect === "transactsql") {
     const batches = splitBatches(content);
@@ -374,6 +375,7 @@ export function parseSql(content) {
           // Fallback 1: try each statement individually
           const stmts = splitStatements(batch);
           if (stmts.length === 0) {
+            warnings.push("SQL AST unavailable; used approximate text extraction");
             mergeResults(acc, extractFromRaw(batch));
           } else {
             for (const stmt of stmts) {
@@ -381,6 +383,7 @@ export function parseSql(content) {
                 const ast = parser.astify(stmt, { database: "mysql" });
                 processNodes(ast, stmt, acc);
               } catch {
+                warnings.push("SQL statement AST unavailable; used approximate text extraction");
                 mergeResults(acc, extractFromRaw(stmt));
               }
             }
@@ -393,11 +396,13 @@ export function parseSql(content) {
       const ast = parser.astify(content, { database: dialect });
       processNodes(ast, content, acc);
     } catch {
+      warnings.push("SQL AST unavailable; used approximate text extraction");
       mergeResults(acc, extractFromRaw(content));
     }
   }
 
   return {
+    warnings,
     imports: [],
     exports: [],
     classes: acc.tables,
