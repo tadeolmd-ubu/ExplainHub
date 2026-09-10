@@ -29,14 +29,15 @@ test("parser failures are returned while valid files and Spanish offline output 
   await fs.writeFile(path.join(root, "good.js"), "export function useful() {};");
   await fs.writeFile(path.join(root, "broken.js"), "export function (");
   await fs.writeFile(path.join(root, "broken.py"), "def invalid(:");
+  await fs.writeFile(path.join(root, "Cargo.toml"), "[broken");
   await fs.writeFile(path.join(root, "ignored.txt"), "not source");
   const result = await new AnalyzerService().analyze(root, "txt", "es", { ai: false });
   assert.equal(result.aiUsed, false);
-  assert.equal(result.parserFailures, 2);
+  assert.equal(result.parserFailures, 3);
   assert.ok(result.summary.includes("useful"));
   assert.ok(result.summary.includes("RESUMEN DEL PROYECTO"));
   assert.deepEqual(result.skippedFiles, ["ignored.txt"]);
-  assert.equal(result.diagnostics.length, 2);
+  assert.equal(result.diagnostics.length, 3);
 });
 
 test("Markdown localizes labels without translating identifiers", () => {
@@ -50,6 +51,21 @@ test("CLI exposes flags and exits nonzero on invalid arguments", async () => {
   const cli = "src/modules/cli/index.js";
   assert.match((await exec(process.execPath, [cli, "--help"])).stdout, /--no-ai/);
   await assert.rejects(exec(process.execPath, [cli, ".", "--format", "invalid"]), error => error.code === 1);
+});
+
+test("CLI creates persistent Spanish Markdown without modifying the input", async t => {
+  const root = await fs.mkdtemp(path.join(tmpdir(), "cli-output-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const project = path.join(root, "project");
+  const output = path.join(root, "reports");
+  await fs.mkdir(project);
+  await fs.writeFile(path.join(project, "README.md"), "Original");
+  await fs.writeFile(path.join(project, "index.js"), "export function greet() {}");
+  await exec(process.execPath, ["src/modules/cli/index.js", project, "--format", "md", "--language", "es", "--output", output, "--no-ai"]);
+  const reports = await fs.readdir(output);
+  assert.equal(reports.length, 1);
+  assert.match(await fs.readFile(path.join(output, reports[0], "README.md"), "utf8"), /## Resumen/);
+  assert.equal(await fs.readFile(path.join(project, "README.md"), "utf8"), "Original");
 });
 
 test("API rejects invalid bodies, remote sources and paths outside its root", async t => {
@@ -73,6 +89,20 @@ test("API rejects invalid bodies, remote sources and paths outside its root", as
   const response = await post({ projectPath: ".", ai: false });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).aiUsed, false);
+  let started = 0;
+  let notify;
+  const bothStarted = new Promise(resolve => { notify = resolve; });
+  let release;
+  const blocked = new Promise(resolve => { release = resolve; });
+  t.mock.method(AnalyzerService.prototype, "analyze", async () => {
+    if (++started === 2) notify();
+    await blocked;
+    return { summary: "done" };
+  });
+  const pending = [post({ projectPath: "." }), post({ projectPath: "." })];
+  await bothStarted;
+  try { assert.equal((await post({ projectPath: "." })).status, 429); }
+  finally { release(); await Promise.all(pending); }
   process.env.API_TOKEN = "test-token";
   assert.equal((await post({ projectPath: "." })).status, 401);
 });

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { tmpdir, homedir } from "node:os";
-import AdmZip from "adm-zip";
+import { createZip } from "./helpers/zip.js";
 import net from "node:net";
 import { RepositoryCloner } from "../src/modules/cloner/index.js";
 import { StructureExtractor } from "../src/modules/structure-extractor/index.js";
@@ -20,10 +20,8 @@ async function fixture(t) {
 
 test("concurrent extractions never share or delete their sibling workspace", async t => {
   const root = await fixture(t);
-  const zip = new AdmZip();
-  zip.addFile("project/index.js", Buffer.from("export const ok = true;"));
   const archive = path.join(root, "project.zip");
-  zip.writeZip(archive);
+  await createZip(archive, { "project/index.js": "export const ok = true;" });
   const cloner = new RepositoryCloner({ baseTempDir: path.join(root, "temp") });
   const [a, b] = await Promise.all([cloner.extractZip(archive), cloner.extractZip(archive)]);
   assert.notEqual(a.tempPath, b.tempPath);

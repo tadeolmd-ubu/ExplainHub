@@ -45,7 +45,7 @@ export class AnalyzerService {
       const files = await parser.parse(tree, projectPath);
       const generator = new TextGenerator();
       const diagnostics = [...parser.diagnostics];
-      const metadata = { diagnostics, skippedFiles: parser.skippedFiles, parserFailures: parser.diagnostics.length, aiUsed: false };
+      const metadata = { diagnostics, skippedFiles: parser.skippedFiles, parserFailures: parser.failureCount, aiUsed: false };
       const useAi = options.ai !== false && Boolean(config.ollama.model);
 
       if (format === "md") {
@@ -55,6 +55,7 @@ export class AnalyzerService {
           files,
           tree,
           projectPath,
+          projectName: result?.cloneName,
           format: "md",
           language,
         });
@@ -63,7 +64,9 @@ export class AnalyzerService {
         let finalModules = modules;
 
         if (useAi) {
-          const enhancer = new AiEnhancer();
+          const enhancer = new AiEnhancer({ timeoutMs: Math.min(config.ollama.timeoutMs, 120000) });
+          const deadline = Date.now() + 120000;
+          let enhancementFailed = false;
           console.log("Mejorando README con IA...");
           try {
             finalReadme = await enhancer.enhanceMarkdown(readme, language);
@@ -71,6 +74,7 @@ export class AnalyzerService {
             console.log("✓ README mejorado");
           } catch (e) {
             diagnostics.push({ stage: "ai", message: e.message });
+            enhancementFailed = true;
             finalReadme = readme;
           }
           finalModules = [];
@@ -78,6 +82,13 @@ export class AnalyzerService {
           const total = modules.length;
           for (let i = 0; i < total; i++) {
             const mod = modules[i];
+            if (enhancementFailed || Date.now() >= deadline) {
+              if (!enhancementFailed) diagnostics.push({ stage: "ai", message: "AI report time budget exhausted; remaining modules kept unchanged" });
+              enhancementFailed = true;
+              finalModules.push(mod);
+              continue;
+            }
+            enhancer.timeoutMs = Math.min(config.ollama.timeoutMs, deadline - Date.now());
             console.log(`  [${i + 1}/${total}] Mejorando ${mod.name}...`);
             try {
               const content = await enhancer.enhanceMarkdown(
@@ -88,6 +99,7 @@ export class AnalyzerService {
               metadata.aiUsed = true;
             } catch (e) {
               diagnostics.push({ stage: "ai", filePath: mod.name, message: e.message });
+              enhancementFailed = true;
               finalModules.push({ ...mod, content: mod.content });
             }
           }

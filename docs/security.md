@@ -1,121 +1,54 @@
-# Security Module
+# Security and resource policy
 
-## Overview
+## Input and traversal
 
-The Security module provides validation guards for the project analysis pipeline. It prevents processing of sensitive system directories and rejects projects that are too large to analyze.
+`source.js` normalizes input once, expands home-relative paths and recognizes
+supported remote schemes and case-insensitive ZIP extensions. `validatePath`
+performs lexical checks; the service additionally calls `validateRealPath` to
+check the actual local target against sensitive system roots.
 
-**Location:** `src/modules/security/`
+Both the size validator and structure extractor use `lstat`, skip symlinks and
+non-regular files, and stop when traversal budgets are exceeded. Source reads use
+`O_NOFOLLOW` where available and recheck file size. Package metadata is bounded
+and symlinks are not followed. These checks do not constitute an OS sandbox
+against another process concurrently mutating ancestor directories.
 
----
+| Limit | Default |
+|---|---|
+| Files | 5,000 |
+| Total source bytes | 100 MiB |
+| Individual source file | 10 MiB |
+| Directory depth | 64 |
+| Traversed entries | 10,000 |
+| Compressed ZIP size | 100 MiB |
+| ZIP entries | 5,000 |
 
-## File Structure
+`limits.js` is the shared source of defaults. `validateRepositorySize` returns a
+`safe` flag, a rejection reason, and observed counters. Missing paths throw.
+The service converts size failures into HTTP 413.
 
-| File | Purpose |
-|------|---------|
-| `index.js` | Module entry point (re-exports) |
-| `pathValidator.js` | Validates project paths against sensitive directories |
-| `sensitivePath.js` | Lists of sensitive system paths (Linux, Windows, macOS) |
-| `repositorySizeValidator.js` | Validates repository size (total size, file count, individual file size) |
+## ZIP and Git lifecycle
 
----
+Each operation receives a unique workspace under the OS temporary directory.
+ZIP extraction uses `yauzl` lazy entries and Node stream pipelines, checking
+actual decompressed bytes as well as declared sizes. Traversal entries, absolute
+paths, symbolic links and duplicate destinations are rejected. The extractor
+unwraps a single top-level directory. It cleans the workspace on failure.
 
-## `validatePath(input)`
+Git has a real 60-second process timeout using simple-git with output-based timer
+refresh disabled. This does not enforce a maximum number of network bytes.
+Successful remote clones remain on disk for navigation; users should delete
+them when no longer needed. Cleanup accepts only direct children of its base.
 
-Validates that the given path is not a sensitive system directory.
+## API
 
-```javascript
-import { validatePath } from "../modules/security/index.js";
+Default binding is `127.0.0.1`. Only local inputs under the canonical
+`ANALYSIS_ROOT` are accepted. Remote repositories remain a CLI feature.
+There are at most two simultaneous API analyses. Invalid inputs receive 400,
+out-of-root paths 403, size failures 413, and capacity exhaustion 429.
+An optional `API_TOKEN` requires a Bearer token using constant-time comparison.
+Internal error details are logged server-side, not returned with HTTP 500.
 
-const result = validatePath("/home/user/projects/myapp");
-// { safe: true, resolved: "/home/user/projects/myapp" }
-
-const result2 = validatePath("/etc/passwd");
-// { safe: false, resolved: "/etc/passwd", reason: '"/etc/passwd" es un directorio sensible' }
-```
-
-**Returns:**
-```javascript
-{
-  safe: boolean,
-  resolved: string,     // resolved absolute path
-  reason?: string       // present only when safe is false
-}
-```
-
-### Sensitive Paths
-
-The module checks against three operating system sets:
-
-**Linux:** `/etc`, `/proc`, `/sys`, `/dev`, `/boot`, `/bin`, `/sbin`, `/lib`, `/lib64`, `/usr`, `/var`, `/opt`, `/root`
-
-**Windows:** `C:\Windows`, `C:\Program Files`, `C:\Program Files (x86)`, `C:\System32`, `C:\Boot`, `C:\Recovery`
-
-**macOS:** `/System`, `/Library`, `/private`, `/cores`, `/Volumes`
-
-Resolves `~` to the user's home directory before checking.
-
----
-
-## `validateRepositorySize(projectPath)`
-
-Walks the project directory tree and validates against three limits:
-
-| Limit | Default | Description |
-|-------|---------|-------------|
-| `maxFiles` | 5,000 | Maximum number of files |
-| `maxFileSize` | 5 MB | Maximum size for any individual file |
-| `maxProjectSize` | 100 MB | Maximum total project size |
-
-Skips directories listed in `ignoredNames` (shared with `StructureExtractor`).
-
-```javascript
-import { validateRepositorySize } from "../modules/security/index.js";
-
-const result = await validateRepositorySize("/path/to/project");
-
-// Success:
-{ safe: true, totalSize: 1234567, fileCount: 42, oversizedFiles: [] }
-
-// Failure (too large):
-{ safe: false, reason: "El proyecto excede los 100 MB (150.23 MB)" }
-
-// Failure (too many files):
-{ safe: false, reason: "El proyecto excede los 5000 archivos (7234)" }
-```
-
----
-
-## Integration
-
-The security module is used by `AnalyzerService` for local project paths:
-
-```javascript
-import { validatePath, validateRepositorySize } from "../../modules/security/index.js";
-
-// Before processing a local path:
-const { safe, reason } = validatePath(input);
-if (!safe) throw new Error(reason);
-
-const sizeResult = await validateRepositorySize(projectPath);
-if (!sizeResult.safe) throw new Error(sizeResult.reason);
-```
-
----
-
-## Dependencies
-
-| Import | Source | Purpose |
-|--------|--------|---------|
-| `fs` | `node:fs/promises` | Directory walking and file stats |
-| `path` | `node:path` | Path resolution |
-| `os` | `node:os` | Home directory resolution for `~` |
-| `ignoredNames` | `../structure-extractor/index.js` | Shared ignore list |
-
----
-
-## Architecture Notes
-
-- **Defense in depth:** Validates both the path (against sensitive directories) and the size (against resource limits).
-- **Shared ignore list:** Reuses `ignoredNames` from `StructureExtractor` to skip `node_modules`, `.git`, etc.
-- **Cross-platform:** Sensitive path lists for Linux, Windows, and macOS are all checked regardless of the host OS.
-- **Fail-safe:** Returns structured results with `safe` boolean and `reason` string — never throws unexpectedly.
+Tests cover symlink cycles, outside targets, concurrent workspaces, a stalled Git
+connection, malicious ZIP traversal and false size headers. They do not claim
+cross-platform sandboxing or a deployment-level network policy.

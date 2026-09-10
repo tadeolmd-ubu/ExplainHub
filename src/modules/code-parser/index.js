@@ -32,6 +32,7 @@ export class CodeParser {
       } else {
         try {
           const result = await this.#processFile(filePath);
+          for (const message of result.warnings || []) this.diagnostics.push({ filePath, stage: "parser", severity: "warning", message });
           results.push(result);
         } catch (error) {
           this.diagnostics.push({ filePath, stage: "parser", message: error.message });
@@ -71,6 +72,7 @@ export class CodeParser {
       }
     }
 
+    this.failureCount = this.diagnostics.filter(d => d.severity !== "warning").length;
     resolveRoutes(results);
     return results;
   }

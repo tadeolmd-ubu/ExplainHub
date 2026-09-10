@@ -1,137 +1,27 @@
-# AiEnhancer Module
+# AiEnhancer
 
-## Overview
+Configuration is centralized in `src/config/env.js`: `OLLAMA_URL`, optional
+`OLLAMA_MODEL`, and `OLLAMA_TIMEOUT_MS` (60,000 by default). The service bypasses
+AI when no model is configured or when `options.ai` is false.
 
-The `AiEnhancer` module takes the plain text output from `TextGenerator` and sends it to a local LLM (via Ollama) to produce a polished, narrative summary of the project in Spanish.
+`enhance(text, "txt", language)` returns a narrative in the selected language.
+`enhanceMarkdown(markdown, language)` requests JSON containing a description,
+validates it, and inserts a labeled blockquote after the document title.
+All original Markdown facts, tables, headings, paragraphs and code remain intact.
+The model no longer rewrites extracted tables or links.
 
-**Location:** `src/modules/ai-enhancer/`
+`postProcess` only trims surrounding whitespace, restores a nonempty original
+when needed, and normalizes the final newline. It never removes trailing prose
+or merges repeated headings.
 
----
+Each request is cancellable through the Ollama client and has a timeout, an input
+budget of 120,000 characters and an output budget of 1 MiB of string characters.
+Markdown service-level enrichment additionally has a two-minute budget and stops
+after the first failure. Empty responses, malformed JSON, missing descriptions,
+timeouts and budget failures become diagnostics with deterministic fallback.
 
-## File Structure
-
-| File | Purpose |
-|------|---------|
-| `index.js` | Core `AiEnhancer` class |
-| `prompt/promptTxt.js` | Prompt template for plain text output |
-| `prompt/promptMd.js` | Prompt template for Markdown output (from plain text) |
-| `prompt/promptMdEnhancer.js` | Prompt template for improving existing Markdown |
-
----
-
-## Class: `AiEnhancer`
-
-### Constructor
-
-Reads configuration from environment variables:
-- `OLLAMA_MODEL` - Model name to use (e.g. `qwen3.5`)
-- `OLLAMA_URL` (default: `"http://localhost:11434"`) - Ollama server URL
-
-### `enhance(plainText, format)`
-
-Sends the plain text analysis to the LLM and returns the full response.
-
-**Parameters:**
-- `plainText` (string) - Output from `TextGenerator.generate()`
-- `format` (string) - `"txt"` or `"md"` — selects which prompt template to use
-
-**Returns:** `Promise<string>` - The complete AI-generated narrative report in txt or md.
-
-### `enhanceMarkdown(markdown)`
-
-Improves an existing Markdown document by sending it to the LLM with a polish prompt. Used by the `md` output format to enrich README.md and module docs.
-
-**Parameters:**
-- `markdown` (string) - Pre-generated Markdown content (from markdown formatters)
-
-**Returns:** `Promise<string>` - The improved Markdown with better wording and formatting.
-
-### Response Cleaning
-
-Raw markdown from the LLM is cleaned:
-- `**bold**` → `bold`
-- `## titles` → `titles`
-- `[links](url)` → `links`
-- `code` → `code`
-- Table rows, code fences, and `---` separators are removed
-
----
-
-## Prompt Templates
-
-There are three prompt files, chosen depending on the format and use case:
-
-**`promptTxt.js`** — instructs the model to return plain text with `----` separators.
-
-**`promptMd.js`** — instructs the model to return Markdown with `##` titles, **bold**, `code`, and tables.
-
-**`promptMdEnhancer.js`** — instructs the model to improve existing Markdown without inventing information. Used by `enhanceMarkdown()` to polish README.md and module docs.
-
-### Markdown Enhancer Rules
-
-The `promptMdEnhancer.js` prompt includes strict rules to prevent the LLM from:
-- Inventing modules, functions, or features not in the original
-- Adding technology definitions (e.g., "Rust is known for memory safety")
-- Explaining what technologies do (the reader already knows them)
-- Restructuring tables (preserves column count, headers, and order)
-- Adding extra columns or rows to existing tables
-- Adding descriptive text like "This project uses..."
-- Adding recommendation or next-steps sections
-
----
-
-## Flow
-
-```
-AiEnhancer.enhance(plainText, format)
-    |
-    +-- buildPrompt[format](plainText)  → choose txt or md prompt
-    +-- ollama.generate({ model, prompt, stream: true })
-    +-- collect stream chunks
-    +-- if txt: cleanMarkdown(raw)      → remove markdown artifacts
-    +-- if md: return raw               → keep markdown
-
-AiEnhancer.enhanceMarkdown(markdown)
-    |
-    +-- buildMdEnhancer(markdown)       → prompt to polish existing md
-    +-- ollama.generate({ model, prompt, stream: true })
-    +-- collect stream chunks
-    +-- return raw                      → improved markdown
-```
-
----
-
-## Dependencies
-
-| Import | Source | Purpose |
-|--------|--------|---------|
-| `ollama` | npm (ollama) | Official Ollama JavaScript client |
-
----
-
-## Usage Example
-
-```javascript
-import { AiEnhancer } from "./src/modules/ai-enhancer/index.js";
-import { TextGenerator } from "./src/modules/text-generator/index.js";
-
-const generator = new TextGenerator();
-const plainText = generator.generate({ technologies, entryPoints, files });
-
-const enhancer = new AiEnhancer();
-const summary = await enhancer.enhance(plainText, "md"); // or "txt"
-
-console.log(summary);
-```
-
----
-
-## Architecture Notes
-
-- **Thin wrapper:** The class is minimal — it reads config from `.env`, builds the prompt, and delegates to Ollama.
-- **Streaming internally:** Collects Ollama's streaming response into a complete string before returning.
-- **Markdown cleanup:** Strips common markdown syntax for clean plain text output.
-- **Three prompt templates:** `promptTxt.js`, `promptMd.js`, and `promptMdEnhancer.js` for different enhancement scenarios.
-- **Markdown passthrough:** When using md format, `cleanMarkdown` is skipped to preserve the Markdown syntax.
-- **`enhanceMarkdown` passthrough:** Returns raw markdown output (no cleanup), since the input is already markdown.
-- **Model-agnostic:** Works with any Ollama-compatible model. Configure via `.env`.
+The constructor accepts `{ client, model, timeoutMs }` for meaningful isolated
+tests. `test/ai-enhancer.test.js` exercises stalled requests, malformed/empty
+responses, language instructions and complete preservation of source content.
+No real model is needed for automated tests. A generated description remains an
+AI interpretation rather than proof of runtime behavior.

@@ -26,6 +26,7 @@ export class TextGenerator {
     files,
     tree,
     projectPath,
+    projectName,
     format = "txt",
     language = "en",
   }) {
@@ -36,6 +37,7 @@ export class TextGenerator {
         entryPoints,
         files,
         projectPath,
+        projectName,
       });
       return {
         readme: localizeReport(generated.readme, language, "md"),
@@ -60,7 +62,7 @@ export class TextGenerator {
     ];
     return localizeReport(sections.filter(Boolean).join("\n\n"), language);
   }
-  #generateMarkdown({ technologies, entryPoints, files, tree, projectPath }) {
+  #generateMarkdown({ technologies, entryPoints, files, tree, projectPath, projectName }) {
     const catalog = buildModuleCatalog(files, projectPath);
     const readme = readmeFormatter({
       technologies,
@@ -68,6 +70,7 @@ export class TextGenerator {
       files,
       tree,
       projectPath,
+      projectName,
       catalog,
       metadata: readProjectMetadata(projectPath),
     });

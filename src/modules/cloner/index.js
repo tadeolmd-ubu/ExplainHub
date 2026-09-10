@@ -2,11 +2,8 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { simpleGit } from "simple-git";
-import AdmZip from "adm-zip";
+import { extractArchive } from "./extractArchive.js";
 import { tmpdir } from "node:os";
-import { repositoryLimits } from "../security/limits.js";
-
-const MAX_EXTRACTED_BYTES = 100 * 1024 * 1024;
 /**
  * Encapsula la logica de clonado de repositorios Git dentro del proyecto.
  * Cada clon se guarda en una carpeta unica dentro de /temp para evitar colisiones.
@@ -202,41 +199,12 @@ export class RepositoryCloner {
     const tempPath = await fs.mkdtemp(path.join(this.baseTempDir, `${extractName || "zip"}-`));
     let repoPath = path.join(tempPath, "repository");
     try {
-      const archiveStat = await fs.stat(zipPath);
-      if (archiveStat.size > MAX_EXTRACTED_BYTES) throw new Error("Zip exceeds compressed size limit");
-      const zip = new AdmZip(zipPath);
-      await fs.mkdir(repoPath);
-      const entries = zip.getEntries();
-      if (entries.length > 5000) {
-        throw new Error(
-          `Zip contiene ${entries.length} archivos, máximo permitido 5000`,
-        );
-      }
-
-      let totalSize = 0;
-      for (const entry of entries) {
-        if (entry.isDirectory) continue;
-        const name = this.safeZipEntryName(entry.entryName, repoPath);
-        if (name.split("/").length > repositoryLimits.maxDepth || entry.header.size > repositoryLimits.maxFileBytes) {
-          throw new Error("Zip entry exceeds file size or depth limit");
-        }
-        totalSize += Number(entry.header.size) || 0;
-        if (totalSize > MAX_EXTRACTED_BYTES) {
-          throw new Error(
-            "El zip excede el tamaño máximo permitido al descomprimir",
-          );
-        }
-        const destination = path.join(repoPath, name);
-        const content = zip.readFile(entry);
-        if (!content || content.length !== entry.header.size) throw new Error("Invalid zip entry size");
-        await fs.mkdir(path.dirname(destination), { recursive: true });
-        await fs.writeFile(destination, content, { flag: "wx" });
-      }
+      await extractArchive(zipPath, repoPath, (name, root) => this.safeZipEntryName(name, root));
       const roots = await fs.readdir(repoPath, { withFileTypes: true });
       if (roots.length === 1 && roots[0].isDirectory()) repoPath = path.join(repoPath, roots[0].name);
     } catch (error) {
       await this.cleanup(tempPath);
-      throw new Error(`No se pudo extraer el zip: ${error.message}`);
+      throw Object.assign(new Error(`No se pudo extraer el zip: ${error.message}`), { status: error.status || 400 });
     }
 
     return {

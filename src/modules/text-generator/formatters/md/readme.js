@@ -8,8 +8,8 @@ export function readmeFormatter({
   projectPath,
   catalog = [],
   metadata = {},
+  projectName = getProjectName(projectPath),
 }) {
-  const projectName = getProjectName(projectPath);
   const sections = [
     `# ${projectName}\n`,
     overviewSection(technologies, entryPoints),

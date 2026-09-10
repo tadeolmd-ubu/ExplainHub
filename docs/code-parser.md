@@ -184,9 +184,10 @@ Parses Python files by spawning a single `python3` process and using the built-i
 | Exports | `name, kind("module"), line` | `__all__` + public module-level names (non-`_` prefixed) |
 
 **Fault tolerance:**
-- `SyntaxError` in Python code → returns empty arrays (not crash)
-- `python3` not installed → returns empty arrays
-- Invalid JSON from Python → returns empty arrays
+- `SyntaxError` in Python code → per-file diagnostic; other files continue
+- `python3` not installed → explicit diagnostics for affected files
+- Invalid JSON or subprocess failure → batch diagnostics, not empty successful results
+- Batches contain at most eight files; subprocess timeout is 30 seconds
 
 ---
 
@@ -648,7 +649,7 @@ serde.workspace = true
 ```
 
 **Fault tolerance:**
-- Invalid TOML → returns empty shape (not crash)
+- Invalid TOML → explicit parser error collected by CodeParser
 - Missing sections → null/empty defaults
 
 ---
@@ -919,6 +920,13 @@ class ParserError extends Error {
 ```
 
 Each file is wrapped in a try/catch — a parse failure in one file does not stop the entire analysis.
+
+After `parse`, `CodeParser.diagnostics`, `skippedFiles` and `failureCount` describe
+the outcome. SQL regex fallbacks carry warning diagnostics. JavaScript/TypeScript
+HTTP routes require recognized Express factories and receivers; static local or
+imported router mounts are composed by `resolveRoutes.js`. Cache/client `.get()`
+calls are not treated as server endpoints. Dynamic routing remains outside this
+static resolver's supported patterns.
 
 ---
 
