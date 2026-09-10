@@ -1,6 +1,4 @@
-import fs from "node:fs";
 import path from "node:path";
-import { buildNameCount } from "../utils.js";
 
 export function readmeFormatter({
   technologies,
@@ -8,17 +6,19 @@ export function readmeFormatter({
   files,
   tree,
   projectPath,
+  catalog = [],
+  metadata = {},
 }) {
   const projectName = getProjectName(projectPath);
   const sections = [
     `# ${projectName}\n`,
     overviewSection(technologies, entryPoints),
-    getStartedSection(technologies, projectPath),
-    projectInfoSection(files, projectPath),
-    dependenciesSection(files, projectPath),
+    getStartedSection(metadata),
+    projectInfoSection(files, metadata),
+    dependenciesSection(files, metadata),
     featuresSection(files),
     structureSection(tree, projectName),
-    modulesSection(files, projectPath),
+    modulesSection(catalog),
     schemaSection(files),
   ].filter(Boolean);
 
@@ -51,7 +51,7 @@ function overviewSection(technologies, entryPoints) {
   return `## Overview\n\n${techs}\n\n${entries}`.trim();
 }
 
-function projectInfoSection(files, projectPath) {
+function projectInfoSection(files, metadata) {
   const cargoFile = files.find((f) => f.package);
   if (cargoFile) {
     const pkg = cargoFile.package;
@@ -68,11 +68,9 @@ function projectInfoSection(files, projectPath) {
     return `## Project Info\n\n| Field | Value |\n|-------|-------|\n${rows.join("\n")}`;
   }
 
-  if (projectPath) {
+  if (metadata) {
     try {
-      const pkg = JSON.parse(
-        fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
-      );
+      const pkg = metadata;
       const rows = [];
       if (pkg.version) rows.push(`| Version | ${pkg.version} |`);
       if (pkg.description) rows.push(`| Description | ${pkg.description} |`);
@@ -89,7 +87,7 @@ function projectInfoSection(files, projectPath) {
   return null;
 }
 
-function dependenciesSection(files, projectPath) {
+function dependenciesSection(files, metadata) {
   const cargoFile = files.find((f) => f.dependencies);
   if (cargoFile) {
     const deps = cargoFile.dependencies;
@@ -107,11 +105,9 @@ function dependenciesSection(files, projectPath) {
     return `## Dependencies\n\n| Name | Version | Type |\n|------|---------|------|\n${rows.join("\n")}`;
   }
 
-  if (projectPath) {
+  if (metadata) {
     try {
-      const pkg = JSON.parse(
-        fs.readFileSync(path.join(projectPath, "package.json"), "utf-8"),
-      );
+      const pkg = metadata;
       const rows = [];
       for (const [name, version] of Object.entries(pkg.dependencies || {})) {
         rows.push(`| ${name} | ${version} | dependencies |`);
@@ -174,30 +170,10 @@ function isIgnored(name) {
   return IGNORED_EXTENSIONS.includes(name);
 }
 
-function modulesSection(files, projectPath) {
-  const dirs = {};
-  for (const file of files) {
-    const dir = path.dirname(file.filePath);
-    if (projectPath && dir === projectPath) continue;
-    if (!dirs[dir]) dirs[dir] = { files: 0, types: new Set() };
-    dirs[dir].files++;
-    if (file.type) dirs[dir].types.add(file.type);
-  }
-
-  const nameCount = buildNameCount(dirs);
-
-  const rows = Object.entries(dirs)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([dir, info]) => {
-      const name = path.basename(dir);
-      let linkName = name;
-      if (nameCount[name] > 1) {
-        const parent = path.basename(path.dirname(dir));
-        linkName = `${parent}-${name}`;
-      }
-      const link = `docs/${linkName}.md`;
-      return `| [${name}](${link}) | ${info.files} | ${moduleDescription(info.types)} |`;
-    });
+function modulesSection(catalog) {
+  const rows = catalog.map(({ name, label, files }) =>
+    `| [${label}](docs/${name}.md) | ${files.length} | ${moduleDescription(new Set(files.map(f => f.type)))} |`,
+  );
   if (rows.length === 0) return null;
   return `## Modules\n\n| Module | Files | Description |\n|--------|-------|-------------|\n${rows.join("\n")}`;
 }
@@ -238,35 +214,10 @@ function schemaSection(files) {
   const rows = items.map((i) => `| ${i.type} | ${i.name} | ${i.detail} |`);
   return `## Database Schema\n\n| Type | Name | Details |\n|------|------|---------|\n${rows.join("\n")}`;
 }
-function getStartedSection(technologies, projectPath) {
-  if (!technologies?.length) return null;
-  const name = path.basename(projectPath || ".");
+function getStartedSection(metadata) {
   const cmds = [];
-
-  if (technologies.includes("node") || technologies.includes("npm")) {
-    cmds.push("npm install");
-    cmds.push("npm start");
-  } else if (technologies.includes("rust")) {
-    cmds.push("cargo build");
-    cmds.push("cargo run");
-  } else if (technologies.includes("python")) {
-    cmds.push("pip install -r requirements.txt");
-    cmds.push("python main.py");
-  } else if (technologies.includes("go")) {
-    cmds.push("go mod download");
-    cmds.push("go run .");
-  } else if (technologies.includes("java")) {
-    cmds.push("mvn install");
-    cmds.push("mvn spring-boot:run");
-  } else if (technologies.includes("php")) {
-    cmds.push("composer install");
-    cmds.push("php -S localhost:8000");
-  } else if (technologies.includes("ruby")) {
-    cmds.push("bundle install");
-    cmds.push("ruby app.rb");
-  } else {
-    return null;
-  }
-  const lines = cmds.map((cmd) => `\`${cmd}\``).join(" → ");
-  return `## Get Started\n\n\`\`\`bash\ncd ${name}\n${cmds.join("\n")}\n\`\`\``;
+  if (typeof metadata.scripts?.start === "string") cmds.push("npm start");
+  else if (typeof metadata.scripts?.dev === "string") cmds.push("npm run dev");
+  if (!cmds.length) return "## Get Started\n\nNo verified startup command detected.";
+  return `## Get Started\n\nRun from the project root:\n\n\`\`\`bash\n${cmds.join("\n")}\n\`\`\``;
 }
