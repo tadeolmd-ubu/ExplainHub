@@ -43,7 +43,7 @@ function overviewSection(technologies, entryPoints) {
       ? "| Technology | File |\n|------------|------|\n" +
         Object.entries(entryPoints)
           .flatMap(([tech, files]) =>
-            files.map((f) => `| ${escapeCell(tech)} | ${escapeCell(f)} |`),
+            files.map((f) => `| ${tech} | ${path.basename(f)} |`),
           )
           .join("\n")
       : "";
@@ -56,14 +56,14 @@ function projectInfoSection(files, metadata) {
   if (cargoFile) {
     const pkg = cargoFile.package;
     const rows = [];
-     if (pkg.version) rows.push(`| Version | ${escapeCell(pkg.version)} |`);
-     if (pkg.edition) rows.push(`| Edition | ${escapeCell(pkg.edition)} |`);
-     if (pkg.description) rows.push(`| Description | ${escapeCell(pkg.description)} |`);
-     if (pkg.license) rows.push(`| License | ${escapeCell(pkg.license)} |`);
-     if (pkg.authors?.length)
-       rows.push(`| Authors | ${escapeCell(pkg.authors.join(", "))} |`);
-     if (pkg.repository) rows.push(`| Repository | ${escapeCell(pkg.repository)} |`);
-     if (pkg.rustVersion) rows.push(`| Rust Version | ${escapeCell(pkg.rustVersion)} |`);
+    if (pkg.version) rows.push(`| Version | ${pkg.version} |`);
+    if (pkg.edition) rows.push(`| Edition | ${pkg.edition} |`);
+    if (pkg.description) rows.push(`| Description | ${pkg.description} |`);
+    if (pkg.license) rows.push(`| License | ${pkg.license} |`);
+    if (pkg.authors?.length)
+      rows.push(`| Authors | ${pkg.authors.join(", ")} |`);
+    if (pkg.repository) rows.push(`| Repository | ${pkg.repository} |`);
+    if (pkg.rustVersion) rows.push(`| Rust Version | ${pkg.rustVersion} |`);
     if (rows.length === 0) return null;
     return `## Project Info\n\n| Field | Value |\n|-------|-------|\n${rows.join("\n")}`;
   }
@@ -72,13 +72,13 @@ function projectInfoSection(files, metadata) {
     try {
       const pkg = metadata;
       const rows = [];
-       if (pkg.version) rows.push(`| Version | ${escapeCell(pkg.version)} |`);
-       if (pkg.description) rows.push(`| Description | ${escapeCell(pkg.description)} |`);
-       if (pkg.license) rows.push(`| License | ${escapeCell(pkg.license)} |`);
-       if (pkg.author) rows.push(`| Author | ${escapeCell(pkg.author)} |`);
-       if (pkg.homepage) rows.push(`| Homepage | ${escapeCell(pkg.homepage)} |`);
+      if (pkg.version) rows.push(`| Version | ${pkg.version} |`);
+      if (pkg.description) rows.push(`| Description | ${pkg.description} |`);
+      if (pkg.license) rows.push(`| License | ${pkg.license} |`);
+      if (pkg.author) rows.push(`| Author | ${pkg.author} |`);
+      if (pkg.homepage) rows.push(`| Homepage | ${pkg.homepage} |`);
       if (pkg.repository?.url)
-         rows.push(`| Repository | ${escapeCell(pkg.repository.url)} |`);
+        rows.push(`| Repository | ${pkg.repository.url} |`);
       if (rows.length === 0) return null;
       return `## Project Info\n\n| Field | Value |\n|-------|-------|\n${rows.join("\n")}`;
     } catch {}
@@ -93,13 +93,13 @@ function dependenciesSection(files, metadata) {
     const deps = cargoFile.dependencies;
     const rows = [];
     for (const d of deps.normal || []) {
-         rows.push(`| ${escapeCell(d.name)} | ${escapeCell(d.version || "-")} | dependencies |`);
+      rows.push(`| ${d.name} | ${d.version || "-"} | dependencies |`);
     }
     for (const d of deps.dev || []) {
-         rows.push(`| ${escapeCell(d.name)} | ${escapeCell(d.version || "-")} | dev-dependencies |`);
+      rows.push(`| ${d.name} | ${d.version || "-"} | dev-dependencies |`);
     }
     for (const d of deps.build || []) {
-         rows.push(`| ${escapeCell(d.name)} | ${escapeCell(d.version || "-")} | build-dependencies |`);
+      rows.push(`| ${d.name} | ${d.version || "-"} | build-dependencies |`);
     }
     if (rows.length === 0) return null;
     return `## Dependencies\n\n| Name | Version | Type |\n|------|---------|------|\n${rows.join("\n")}`;
@@ -110,10 +110,10 @@ function dependenciesSection(files, metadata) {
       const pkg = metadata;
       const rows = [];
       for (const [name, version] of Object.entries(pkg.dependencies || {})) {
-         rows.push(`| ${escapeCell(name)} | ${escapeCell(version)} | dependencies |`);
+        rows.push(`| ${name} | ${version} | dependencies |`);
       }
       for (const [name, version] of Object.entries(pkg.devDependencies || {})) {
-         rows.push(`| ${escapeCell(name)} | ${escapeCell(version)} | dev-dependencies |`);
+        rows.push(`| ${name} | ${version} | dev-dependencies |`);
       }
       if (rows.length === 0) return null;
       return `## Dependencies\n\n| Name | Version | Type |\n|------|---------|------|\n${rows.join("\n")}`;
@@ -130,7 +130,7 @@ function featuresSection(files) {
   if (!cargoFile) return null;
   const rows = [];
   for (const [name, implies] of Object.entries(cargoFile.features)) {
-     rows.push(`| ${escapeCell(name)} | ${escapeCell(implies.length > 0 ? implies.join(", ") : "-")} |`);
+    rows.push(`| ${name} | ${implies.length > 0 ? implies.join(", ") : "-"} |`);
   }
   if (rows.length === 0) return null;
   return `## Features\n\n| Name | Implies |\n|------|--------|\n${rows.join("\n")}`;
@@ -211,7 +211,7 @@ function schemaSection(files) {
       items.push({ type: "Index", name: i.name, detail: `ON ${i.table}` });
   }
   if (items.length === 0) return null;
-  const rows = items.map((i) => `| ${escapeCell(i.type)} | ${escapeCell(i.name)} | ${escapeCell(i.detail)} |`);
+  const rows = items.map((i) => `| ${i.type} | ${i.name} | ${i.detail} |`);
   return `## Database Schema\n\n| Type | Name | Details |\n|------|------|---------|\n${rows.join("\n")}`;
 }
 function getStartedSection(metadata) {
@@ -220,8 +220,4 @@ function getStartedSection(metadata) {
   else if (typeof metadata.scripts?.dev === "string") cmds.push("npm run dev");
   if (!cmds.length) return "## Get Started\n\nNo verified startup command detected.";
   return `## Get Started\n\nRun from the project root:\n\n\`\`\`bash\n${cmds.join("\n")}\n\`\`\``;
-}
-
-function escapeCell(value) {
-  return String(value).replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 }

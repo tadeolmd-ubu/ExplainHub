@@ -3,7 +3,6 @@ import path from "node:path";
 export function resolveRoutes(files) {
   const byPath = new Map(files.map(file => [path.resolve(file.filePath), file]));
   const parents = new Map();
-  const budget = { visited: 0, truncated: false };
   const key = (file, receiver) => `${path.resolve(file.filePath)}#${receiver}`;
   for (const file of files) {
     for (const mount of file.routeMounts || []) {
@@ -24,33 +23,16 @@ export function resolveRoutes(files) {
   }
   function prefixes(target, visited = new Set()) {
     if (visited.has(target) || visited.size > 32) return [];
-    if (++budget.visited > 10000) {
-      budget.truncated = true;
-      return [];
-    }
     const mounts = parents.get(target);
     if (!mounts) return [""];
     const next = new Set(visited).add(target);
-    const result = [];
-    for (const mount of mounts) {
-      for (const prefix of prefixes(mount.parent, next)) {
-        result.push(join(prefix, mount.prefix));
-        if (result.length >= 100) return result;
-      }
-    }
-    return result;
+    return mounts.flatMap(m => prefixes(m.parent, next).map(p => join(p, m.prefix))).slice(0, 100);
   }
   for (const file of files) {
     file.routes = (file.routes || []).flatMap(route => {
       if (!route.receiver) return [route];
       return prefixes(key(file, route.receiver)).map(prefix => ({ ...route, path: join(prefix, route.path) }));
     });
-  }
-  if (budget.truncated) {
-    for (const file of files) {
-      file.routeDiagnostics ||= [];
-      file.routeDiagnostics.push("Route mount expansion exceeded its analysis budget");
-    }
   }
 }
 

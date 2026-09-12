@@ -4,10 +4,7 @@ import { pipeline } from "node:stream/promises";
 
 export async function createZip(target, files) {
   const zip = new yazl.ZipFile();
-  for (const [name, content] of Object.entries(files)) {
-    if (content === null) zip.addEmptyDirectory(name.endsWith("/") ? name : `${name}/`);
-    else zip.addBuffer(Buffer.from(content), name);
-  }
+  for (const [name, content] of Object.entries(files)) zip.addBuffer(Buffer.from(content), name);
   const writing = pipeline(zip.outputStream, createWriteStream(target));
   zip.end();
   await writing;

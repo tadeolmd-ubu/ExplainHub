@@ -17,7 +17,6 @@ export function analyzeExpress(ast) {
   const receivers = new Set();
   const routeExports = {};
   const routeImports = {};
-  const scopes = [];
   for (const node of nodes) {
     if (node.type === "ImportDeclaration") {
       for (const spec of node.specifiers) {
@@ -43,12 +42,6 @@ export function analyzeExpress(ast) {
     }
   }
   for (const node of nodes) {
-    if (!node.type?.startsWith("Function") && node.type !== "ArrowFunctionExpression") continue;
-    const bindings = new Set((node.params || []).flatMap(paramNames));
-    walkBindings(node.body, bindings);
-    scopes.push({ start: node.start, end: node.end, bindings });
-  }
-  for (const node of nodes) {
     if (node.type !== "VariableDeclarator" || node.id.type !== "Identifier" || node.init?.type !== "CallExpression") continue;
     const callee = node.init.callee;
     if (factories.has(callee.name) || routerFactories.has(callee.name) ||
@@ -66,7 +59,6 @@ export function analyzeExpress(ast) {
     if (node.type !== "CallExpression" || node.callee?.type !== "MemberExpression") continue;
     const receiver = node.callee.object?.name;
     if (!receivers.has(receiver)) continue;
-    if (scopes.some(scope => node.start >= scope.start && node.end <= scope.end && scope.bindings.has(receiver))) continue;
     const method = node.callee.property?.name;
     const first = node.arguments[0];
     if (method === "use") {
@@ -79,29 +71,6 @@ export function analyzeExpress(ast) {
     }
   }
   return { routes, routeMounts, routeImports, routeExports };
-}
-
-function paramNames(node) {
-  if (!node) return [];
-  if (node.type === "Identifier") return [node.name];
-  if (node.type === "AssignmentPattern") return paramNames(node.left);
-  if (node.type === "RestElement") return paramNames(node.argument);
-  if (node.type === "ObjectPattern") return node.properties?.flatMap(property => paramNames(property.value)) || [];
-  if (node.type === "ArrayPattern") return node.elements?.flatMap(paramNames) || [];
-  return [];
-}
-
-function walkBindings(node, bindings) {
-  if (!node || typeof node !== "object") return;
-  if (node !== undefined && (node.type?.startsWith("Function") || node.type === "ArrowFunctionExpression")) return;
-  if (node.type === "VariableDeclarator") {
-    for (const name of paramNames(node.id)) bindings.add(name);
-  }
-  for (const [key, value] of Object.entries(node)) {
-    if (["loc", "comments", "tokens"].includes(key)) continue;
-    if (Array.isArray(value)) value.forEach(child => walkBindings(child, bindings));
-    else if (value && typeof value === "object") walkBindings(value, bindings);
-  }
 }
 
 export function extractRoutes(ast) {

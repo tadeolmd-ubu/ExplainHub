@@ -74,11 +74,6 @@ export class CodeParser {
 
     this.failureCount = this.diagnostics.filter(d => d.severity !== "warning").length;
     resolveRoutes(results);
-    for (const file of results) {
-      for (const message of file.routeDiagnostics || []) {
-        this.diagnostics.push({ filePath: file.filePath, stage: "routes", severity: "warning", message });
-      }
-    }
     return results;
   }
   async #processFile(filePath) {
