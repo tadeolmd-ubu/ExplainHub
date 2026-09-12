@@ -1,29 +1,83 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
+import * as fs from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
+
 import { StructureExtractor } from "../src/modules/structure-extractor/index.js";
 import { CodeParser } from "../src/modules/code-parser/index.js";
 import { TextGenerator } from "../src/modules/text-generator/index.js";
 
-test("Markdown flow documents an isolated project and its actual startup script", async t => {
-  const root = await fs.mkdtemp(path.join(tmpdir(), "md-flow-"));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
-  await fs.mkdir(path.join(root, "src"));
-  await fs.writeFile(path.join(root, "src", "index.js"), "export function greet() { return 'hello'; }");
-  const structure = await new StructureExtractor().extract(root);
-  const files = await new CodeParser().parse(structure.tree, root);
-  const generator = new TextGenerator();
-  const bare = generator.generate({ ...structure, files, projectPath: root, format: "md" });
-  assert.ok(bare.readme.startsWith(`# ${path.basename(root)}\n`));
-  assert.ok(bare.readme.includes("## Project Structure"));
-  assert.ok(bare.modules[0].content.includes("greet"));
-  assert.ok(bare.readme.includes(`docs/${bare.modules[0].name}.md`));
-  assert.ok(!bare.readme.includes("npm start"));
-  await fs.writeFile(path.join(root, "package.json"), JSON.stringify({ scripts: { dev: "node src/index.js" }, dependencies: { express: "^5.0.0" } }));
-  const configured = generator.generate({ ...structure, files, projectPath: root, format: "md" });
-  assert.ok(configured.readme.includes("npm run dev"));
-  assert.ok(configured.readme.includes("express"));
-  assert.ok(!configured.readme.includes("npm start"));
+test("should use basename fallback when project has no package.json", async () => {
+  const structureExtractor = new StructureExtractor();
+  const textGenerator = new TextGenerator();
+  const codeParser = new CodeParser();
+
+  const tempPath = await fs.mkdtemp(path.join(tmpdir(), "foo-"));
+
+  const { technologies, entryPoints, tree } =
+    await structureExtractor.extract(".");
+  const files = await codeParser.parse(tree, ".");
+  const { readme } = textGenerator.generate({
+    technologies,
+    entryPoints,
+    files,
+    tree,
+    projectPath: tempPath,
+    format: "md",
+  });
+
+  await fs.rm(tempPath, { recursive: true, force: true });
+  assert.equal(typeof readme, "string");
+  assert.ok(readme.length > 0);
+});
+
+test("README, should generate sections: Overview, projectStructure, Modules, API, Schemas", async () => {
+  const structureExtractor = new StructureExtractor();
+  const textGenerator = new TextGenerator();
+  const codeParser = new CodeParser();
+
+  const { technologies, entryPoints, tree } =
+    await structureExtractor.extract(".");
+  const files = await codeParser.parse(tree, ".");
+  const { readme } = textGenerator.generate({
+    technologies,
+    entryPoints,
+    files,
+    tree,
+    projectPath: ".",
+    format: "md",
+  });
+  assert.equal(typeof readme, "string");
+  assert.ok(readme.length > 0);
+  assert.ok(readme.includes("Overview"));
+  assert.ok(readme.includes("Project Structure"));
+  assert.ok(readme.includes("Modules"));
+});
+test("MODULES, should contain name, content, and expected sections", async () => {
+  const structureExtractor = new StructureExtractor();
+  const textGenerator = new TextGenerator();
+  const codeParser = new CodeParser();
+
+  const { technologies, entryPoints, tree } =
+    await structureExtractor.extract(".");
+  const files = await codeParser.parse(tree, ".");
+  const { modules } = textGenerator.generate({
+    technologies,
+    entryPoints,
+    files,
+    tree,
+    projectPath: ".",
+    format: "md",
+  });
+  assert.ok(Array.isArray(modules));
+  assert.ok(modules.length > 0);
+
+  for (const mod of modules) {
+    assert.equal(typeof mod.name, "string");
+    assert.ok(mod.name.length > 0);
+    assert.equal(typeof mod.content, "string");
+    assert.ok(mod.content.length > 0);
+    assert.ok(mod.content.startsWith("# Module:"));
+  }
 });

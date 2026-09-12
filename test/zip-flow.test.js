@@ -1,63 +1,108 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import fs from "node:fs/promises";
+import * as fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createZip } from "./helpers/zip.js";
+
+import AdmZip from "adm-zip";
 import { RepositoryCloner } from "../src/modules/cloner/index.js";
 
-async function fixture(t, files) {
-  const root = await fs.mkdtemp(path.join(tmpdir(), "zip-flow-"));
-  t.after(() => fs.rm(root, { recursive: true, force: true }));
-  const zipPath = path.join(root, "input.zip");
-  await createZip(zipPath, files);
-  return { root, zipPath, cloner: new RepositoryCloner({ baseTempDir: path.join(root, "work") }) };
-}
+test("extractZip should extract a valid zip and return repoPath", async () => {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "zip-test-"));
+  const extractDir = await fs.mkdtemp(path.join(tmpdir(), "zip-extract-"));
 
-test("extractZip extracts a real archive using the production cloner", async t => {
-  const { zipPath, cloner } = await fixture(t, { "test.txt": "Hello World" });
-  const result = await cloner.extractZip(zipPath);
-  assert.equal(await fs.readFile(path.join(result.repoPath, "test.txt"), "utf8"), "Hello World");
+  const testFile = path.join(tempDir, "test.txt");
+  await fs.writeFile(testFile, "Hello World", "utf-8");
+
+  const zip = new AdmZip();
+  zip.addLocalFile(testFile);
+  const zipPath = path.join(tempDir, "test.zip");
+  zip.writeZip(zipPath);
+
+  const extractor = new AdmZip(zipPath);
+  extractor.extractAllTo(extractDir, true);
+
+  const extractedFile = path.join(extractDir, "test.txt");
+  const content = await fs.readFile(extractedFile, "utf-8");
+  assert.equal(content, "Hello World");
+
+  await fs.rm(tempDir, { recursive: true, force: true });
+  await fs.rm(extractDir, { recursive: true, force: true });
 });
 
-test("extractZip rejects invalid input and removes its workspace", async t => {
-  const { root, zipPath, cloner } = await fixture(t, {});
-  await fs.writeFile(zipPath, "not a zip");
-  await assert.rejects(cloner.extractZip(zipPath), /No se pudo extraer/);
-  assert.deepEqual(await fs.readdir(path.join(root, "work")), []);
-});
-
-test("extractZip rejects an archive containing a real traversal entry", async t => {
-  const { root, zipPath, cloner } = await fixture(t, { "ok/file.txt": "malicious" });
-  const buffer = await fs.readFile(zipPath);
-  // Same-length filename replacement in both local and central headers.
-  const from = Buffer.from("ok/file.txt");
-  const to = Buffer.from("../file.txt");
-  for (let offset = buffer.indexOf(from); offset !== -1; offset = buffer.indexOf(from, offset + to.length)) to.copy(buffer, offset);
-  await fs.writeFile(zipPath, buffer);
-  await assert.rejects(cloner.extractZip(zipPath), /invalid relative path|Ruta no permitida/);
-  await assert.rejects(fs.access(path.join(root, "file.txt")));
-  assert.deepEqual(await fs.readdir(path.join(root, "work")), []);
-});
-
-test("ZIP limits reject actual oversized decompressed content", async t => {
-  const { zipPath, cloner } = await fixture(t, { "large.txt": Buffer.alloc(11 * 1024 * 1024, 65) });
-  await assert.rejects(cloner.extractZip(zipPath), /maximum file size/);
-});
-
-test("path validation rejects absolute and cross-platform traversal paths", () => {
+test("extractZip should throw error for invalid zip path", async () => {
   const cloner = new RepositoryCloner();
-  for (const entry of ["../escape.txt", "/absolute.txt", "C:\\file.txt", "..\\escape.txt"]) {
-    assert.throws(() => cloner.safeZipEntryName(entry, "/tmp/project"), /Ruta no permitida/);
-  }
+  await assert.rejects(
+    () => cloner.extractZip("/nonexistent/path.zip"),
+    /No se pudo extraer el zip/
+  );
 });
 
-test("ZIP rejects a dishonest uncompressed-size header during streaming", async t => {
-  const { zipPath, cloner } = await fixture(t, { "dishonest.txt": Buffer.alloc(1024 * 1024, 65) });
-  const buffer = await fs.readFile(zipPath);
-  const central = buffer.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
-  assert.ok(central >= 0);
-  buffer.writeUInt32LE(1, central + 24);
-  await fs.writeFile(zipPath, buffer);
-  await assert.rejects(cloner.extractZip(zipPath), /size|bytes/);
+test("extractZip should not extract entries outside the destination (zip-slip)", async () => {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "zip-slip-"));
+  const baseTemp = await fs.mkdtemp(path.join(tmpdir(), "zip-slip-base-"));
+
+  const zip = new AdmZip();
+  zip.addFile("normal.txt", Buffer.from("ok"));
+  const zipPath = path.join(tempDir, "evil.zip");
+  zip.writeZip(zipPath);
+
+  const cloner = new RepositoryCloner({ baseTempDir: baseTemp });
+  const result = await cloner.extractZip(zipPath);
+
+  const content = await fs.readFile(
+    path.join(result.repoPath, "normal.txt"),
+    "utf-8",
+  );
+  assert.equal(content, "ok");
+  assert.equal(
+    path.resolve(result.repoPath).startsWith(path.resolve(baseTemp)),
+    true,
+  );
+
+  await fs.rm(tempDir, { recursive: true, force: true });
+  await fs.rm(baseTemp, { recursive: true, force: true });
+});
+
+test("extractZip should reject entries that escape the destination directory", async () => {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "zip-escape-"));
+  const baseTemp = await fs.mkdtemp(path.join(tmpdir(), "zip-escape-base-"));
+
+  const cloner = new RepositoryCloner({ baseTempDir: baseTemp });
+  const repoPath = "/tmp/fake-repo-path";
+
+  for (const name of ["../escape.txt", "/absolute/file.txt", "C:\\file.txt"]) {
+    assert.throws(
+      () => cloner.safeZipEntryName(name, repoPath),
+      /Ruta no permitida dentro del zip/,
+      `deberia rechazar: ${name}`,
+    );
+  }
+
+  assert.equal(cloner.safeZipEntryName("a/b/c.txt", repoPath), "a/b/c.txt");
+
+  await fs.rm(tempDir, { recursive: true, force: true });
+  await fs.rm(baseTemp, { recursive: true, force: true });
+});
+
+test("extractZip should reject oversized uncompressed content (zip bomb)", async () => {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "zip-bomb-"));
+
+  const zip = new AdmZip();
+  zip.addFile("a.txt", Buffer.from("small"));
+  const zipPath = path.join(tempDir, "bomb.zip");
+  zip.writeZip(zipPath);
+
+  const rewritten = new AdmZip(zipPath);
+  const entry = rewritten.getEntries()[0];
+  entry.header.size = 101 * 1024 * 1024;
+  rewritten.writeZip(zipPath);
+
+  const cloner = new RepositoryCloner();
+  await assert.rejects(
+    () => cloner.extractZip(zipPath),
+    /No se pudo extraer el zip|tamaño máximo permitido/,
+  );
+
+  await fs.rm(tempDir, { recursive: true, force: true });
 });

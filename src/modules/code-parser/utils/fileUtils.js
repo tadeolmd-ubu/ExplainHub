@@ -1,7 +1,5 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { constants } from "node:fs";
-import { repositoryLimits, limitError } from "../../security/limits.js";
 import { fileTypes } from "../fileTypes.js";
 
 export function traverse(node, parentPath = "") {
@@ -63,14 +61,7 @@ export function isParseable(filePath) {
   return parseableTypes.has(type);
 }
 export async function readFile(filePath) {
-  const handle = await fs.open(filePath, constants.O_RDONLY | (constants.O_NOFOLLOW || 0));
-  try {
-    const stat = await handle.stat();
-    if (!stat.isFile() || stat.size > repositoryLimits.maxFileBytes) throw limitError("Unsupported or oversized file");
-    return await handle.readFile("utf-8");
-  } finally {
-    await handle.close();
-  }
+  return fs.readFile(filePath, "utf-8");
 }
 export function getFileType(filePath) {
   const basename = path.basename(filePath);
@@ -87,5 +78,5 @@ export function getFileType(filePath) {
 }
 
 export function saveFile(content, filePath) {
-  return fs.writeFile(filePath, content, { encoding: "utf-8", flag: "wx" });
+  return fs.writeFile(filePath, content, "utf-8");
 }

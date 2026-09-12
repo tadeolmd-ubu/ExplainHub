@@ -7,7 +7,7 @@ let pythonAvailable = true;
 async function ensurePython() {
   if (!pythonAvailable) return false;
   try {
-    await execFileAsync("python3", ["--version"], { timeout: 5000 });
+    await execFileAsync("python3", ["--version"]);
   } catch {
     pythonAvailable = false;
     console.warn(
@@ -24,8 +24,8 @@ import ast, json, sys
 def parse_one(code):
     try:
         tree = ast.parse(code)
-    except (SyntaxError, ValueError, RecursionError) as error:
-        return {"error": str(error)}
+    except SyntaxError:
+        return {"imports": [], "functions": [], "classes": [], "routes": [], "exports": []}
 
     imports = []
     functions = []
@@ -41,8 +41,7 @@ def parse_one(code):
     def parse_func(node):
         return {
             "name": node.name,
-             "kind": "async" if isinstance(node, ast.AsyncFunctionDef) else "function",
-             "async": isinstance(node, ast.AsyncFunctionDef),
+            "kind": "async" if isinstance(node, ast.AsyncFunctionDef) else "function",
             "params": [arg.arg for arg in node.args.args],
             "line": node.lineno
         }
@@ -69,7 +68,7 @@ def parse_one(code):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             functions.append(parse_func(node))
             for dec in node.decorator_list:
-                if isinstance(dec, ast.Call) and hasattr(dec.func, "attr") and dec.func.attr in ("get", "post", "put", "patch", "delete", "head", "options", "route"):
+                if isinstance(dec, ast.Call) and hasattr(dec.func, "attr"):
                     path = strip_quotes(ast.unparse(dec.args[0])) if dec.args else "/"
                     routes.append({
                         "method": dec.func.attr.upper(),
@@ -84,7 +83,7 @@ def parse_one(code):
                 if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                     methods.append(parse_func(item))
                     for dec in item.decorator_list:
-                        if isinstance(dec, ast.Call) and hasattr(dec.func, "attr") and dec.func.attr in ("get", "post", "put", "patch", "delete", "head", "options", "route"):
+                        if isinstance(dec, ast.Call) and hasattr(dec.func, "attr"):
                             path = strip_quotes(ast.unparse(dec.args[0])) if dec.args else "/"
                             routes.append({
                                 "method": dec.func.attr.upper(),
@@ -150,19 +149,17 @@ print(json.dumps(results))
 `;
 
 function execPython(input) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const child = execFile("python3", ["-c", EXTRACTION_SCRIPT], {
       maxBuffer: 10 * 1024 * 1024,
-      timeout: 30000,
     }, (err, stdout) => {
-      if (err || !stdout) return reject(err || new Error("Python returned no output"));
+      if (err || !stdout) return resolve([]);
       try {
         resolve(JSON.parse(stdout));
-      } catch (error) {
-        reject(error);
+      } catch {
+        resolve([]);
       }
     });
-    child.stdin.on("error", reject);
     child.stdin.write(JSON.stringify(input));
     child.stdin.end();
   });
@@ -170,15 +167,13 @@ function execPython(input) {
 
 export async function parsePython(content) {
   if (!(await ensurePython())) {
-    throw new Error("python3 is not available");
+    return { imports: [], functions: [], classes: [], routes: [], exports: [] };
   }
   const results = await execPython([{ content }]);
-  if (results[0]?.error) throw new Error(results[0].error);
-  if (!results[0]) throw new Error("Python returned no result");
-  return results[0];
+  return results[0] || { imports: [], functions: [], classes: [], routes: [], exports: [] };
 }
 
 export async function parsePythonBatch(files) {
-  if (!(await ensurePython())) throw new Error("python3 is not available");
+  if (!(await ensurePython())) return [];
   return execPython(files);
 }

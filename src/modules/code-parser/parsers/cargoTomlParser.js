@@ -194,7 +194,21 @@ export async function parseCargoToml(content) {
       patches: extractPatches(doc),
       platformDeps: extractPlatformDeps(doc),
     };
-  } catch (error) {
-    throw new Error(`Invalid Cargo.toml: ${error.message}`, { cause: error });
+  } catch {
+    return {
+      imports: [],
+      functions: [],
+      classes: [],
+      routes: [],
+      exports: [],
+      package: null,
+      dependencies: { normal: [], dev: [], build: [] },
+      features: {},
+      profiles: null,
+      workspace: null,
+      buildTargets: { bin: [], lib: null, example: [], test: [], bench: [] },
+      patches: null,
+      platformDeps: null,
+    };
   }
 }

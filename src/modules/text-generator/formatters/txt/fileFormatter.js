@@ -3,7 +3,7 @@ import { isEmptyFile } from "../utils.js";
 
 export function fileFormatter(file) {
   if (isEmptyFile(file)) {
-    return `-- ${path.basename(file.filePath)} (${file.type}) --\nNo declarations detected`;
+    return `-- ${path.basename(file.filePath)} (${file.type}) --\nPendiente de implementar`;
   }
   const {
     filePath, type, imports, exports, functions, classes, routes,

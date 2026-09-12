@@ -2,7 +2,7 @@ import parser from "@babel/parser";
 import { extractImports } from "../extractors/importExtractor.js";
 import { extractExports } from "../extractors/exportsExtractor.js";
 import { extractClasses } from "../extractors/classExtractor.js";
-import { analyzeExpress } from "../extractors/routesExtractor.js";
+import { extractRoutes } from "../extractors/routesExtractor.js";
 import { extractFunctions } from "../extractors/functionExtractor.js";
 
 export function parseJavaScript(content) {
@@ -15,7 +15,7 @@ export function parseJavaScript(content) {
     imports: extractImports(ast),
     exports: extractExports(ast),
     classes: extractClasses(ast),
-    ...analyzeExpress(ast),
+    routes: extractRoutes(ast),
     functions: extractFunctions(ast),
   };
 }

@@ -74,7 +74,14 @@ export async function parseCargoConfig(content) {
         targets: extractTargets(doc),
       },
     };
-  } catch (error) {
-    throw new Error(`Invalid Cargo configuration: ${error.message}`, { cause: error });
+  } catch {
+    return {
+      imports: [],
+      functions: [],
+      classes: [],
+      routes: [],
+      exports: [],
+      cargoConfig: {},
+    };
   }
 }

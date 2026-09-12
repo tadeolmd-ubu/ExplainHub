@@ -2,37 +2,47 @@ import * as fs from "node:fs/promises";
 import path from "node:path";
 import { ignoredNames } from "../structure-extractor/index.js";
 import { resolvePath } from "./pathValidator.js";
-import { repositoryLimits, limitError } from "./limits.js";
 
-export async function validateRepositorySize(projectPath, limits = repositoryLimits) {
-  const state = { totalSize: 0, fileCount: 0, entries: 0 };
-  try {
-    await walkDirectory(resolvePath(projectPath), state, limits, 0);
-    return { safe: true, ...state };
-  } catch (error) {
-    if (error.status === 413) return { safe: false, reason: error.message, ...state };
-    throw error;
+const maxFiles = 5000;
+const maxProjectSize = 100 * 1024 * 1024;
+export async function validateRepositorySize(projectPath) {
+  const absolutePath = resolvePath(projectPath);
+  await fs.access(absolutePath);
+  const state = { totalSize: 0, fileCount: 0 };
+  await walkDirectory(absolutePath, state);
+  if (state.totalSize > maxProjectSize) {
+    return {
+      safe: false,
+      reason: `El proyecto excede los 100 MB (${(state.totalSize / 1024 / 1024).toFixed(2)} MB)`,
+    };
   }
+  if (state.fileCount > maxFiles) {
+    return {
+      safe: false,
+      reason: `El proyecto excede los ${maxFiles} archivos (${state.fileCount})`,
+    };
+  }
+  return {
+    safe: true,
+    totalSize: state.totalSize,
+    fileCount: state.fileCount,
+  };
 }
-
-async function walkDirectory(dirPath, state, limits, depth) {
-  if (depth > limits.maxDepth) throw limitError("Repository exceeds maximum directory depth");
-  const directory = await fs.opendir(dirPath);
-  for await (const entry of directory) {
-    if (ignoredNames.has(entry.name)) continue;
-    if (++state.entries > limits.maxEntries) throw limitError("Repository contains too many entries");
-    const fullPath = path.join(dirPath, entry.name);
+async function walkDirectory(dirPath, state) {
+  const entries = await fs.readdir(dirPath);
+  for (const entry of entries) {
+    if (shouldIgnore(entry)) continue;
+    const fullPath = path.join(dirPath, entry);
     const stats = await fs.lstat(fullPath);
     if (stats.isSymbolicLink()) continue;
     if (stats.isDirectory()) {
-      await walkDirectory(fullPath, state, limits, depth + 1);
-    } else if (stats.isFile()) {
+      await walkDirectory(fullPath, state);
+    } else {
       state.fileCount++;
       state.totalSize += stats.size;
-      if (stats.size > limits.maxFileBytes) throw limitError(`File exceeds maximum size: ${entry.name}`);
-      if (state.fileCount > limits.maxFiles || state.totalSize > limits.maxBytes) {
-        throw limitError("Repository exceeds file count or size limit");
-      }
     }
   }
+}
+function shouldIgnore(name) {
+  return ignoredNames.has(name);
 }

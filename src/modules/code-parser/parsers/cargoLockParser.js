@@ -41,7 +41,16 @@ export async function parseCargoLock(content) {
       packages,
       rootPackage,
     };
-  } catch (error) {
-    throw new Error(`Invalid Cargo.lock: ${error.message}`, { cause: error });
+  } catch {
+    return {
+      imports: [],
+      functions: [],
+      classes: [],
+      routes: [],
+      exports: [],
+      lockfileVersion: null,
+      packages: [],
+      rootPackage: null,
+    };
   }
 }

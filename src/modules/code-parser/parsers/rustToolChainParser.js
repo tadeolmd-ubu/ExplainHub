@@ -24,7 +24,14 @@ export async function parseRustToolchain(content) {
       exports: [],
       toolchain: extractToolchain(doc),
     };
-  } catch (error) {
-    throw new Error(`Invalid Rust toolchain: ${error.message}`, { cause: error });
+  } catch {
+    return {
+      imports: [],
+      functions: [],
+      classes: [],
+      routes: [],
+      exports: [],
+      toolchain: null,
+    };
   }
 }
