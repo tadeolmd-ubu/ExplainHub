@@ -132,22 +132,24 @@ async function generate({ host, model, prompt, timeout }) {
   const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
+    // Stream the response. Node's fetch (undici) aborts a request that has not
+    // received response headers after 5 minutes. Generation with a non-streaming
+    // request sends headers only when the whole document is ready, so the tuned
+    // model hit UND_ERR_HEADERS_TIMEOUT on slower GPUs. Streaming sends chunks
+    // as they are produced and keeps the connection alive.
     const response = await fetch(`${host}/api/generate`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         model,
         prompt,
-        stream: false,
+        stream: true,
         think: false,
         options: {
           temperature: 0,
           seed: 42,
           // Ollama's default context is 4096, but a production prompt is
-          // ~1.8k tokens and a corrected document adds another ~2k. Without
-          // this, generation runs past the context window and Ollama 0.20.x
-          // answers 500 (the service can even restart, which surfaces here as
-          // "fetch failed").
+          // ~1.8k tokens and a corrected document adds another ~2k.
           num_ctx: 8192,
           num_predict: 4096,
         },
@@ -162,9 +164,32 @@ async function generate({ host, model, prompt, timeout }) {
       );
     }
 
-    const data = await response.json();
-    if (data.error) throw new Error(`Ollama error: ${data.error}`);
-    return data.response || "";
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let text = "";
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const chunk = JSON.parse(line);
+        if (chunk.error) throw new Error(`Ollama error: ${chunk.error}`);
+        if (chunk.response) text += chunk.response;
+      }
+    }
+
+    if (buffer.trim()) {
+      const chunk = JSON.parse(buffer);
+      if (chunk.error) throw new Error(`Ollama error: ${chunk.error}`);
+      if (chunk.response) text += chunk.response;
+    }
+
+    return text;
   } finally {
     clearTimeout(timer);
   }
