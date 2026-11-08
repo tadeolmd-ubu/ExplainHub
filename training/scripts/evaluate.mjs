@@ -143,6 +143,12 @@ async function generate({ host, model, prompt, timeout }) {
         options: {
           temperature: 0,
           seed: 42,
+          // Ollama's default context is 4096, but a production prompt is
+          // ~1.8k tokens and a corrected document adds another ~2k. Without
+          // this, generation runs past the context window and Ollama 0.20.x
+          // answers 500 (the service can even restart, which surfaces here as
+          // "fetch failed").
+          num_ctx: 8192,
           num_predict: 4096,
         },
       }),
