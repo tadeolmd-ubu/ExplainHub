@@ -43,6 +43,8 @@ Options:
   --tuned <model>   Fine-tuned Ollama model (default: explainhub-docs)
   --host <url>      Ollama base URL (default: OLLAMA_URL or http://localhost:11434)
   --limit <n>       Evaluate only the first n rows (0 = all, default: 0)
+  --offset <n>      Skip the first n rows before applying --limit (default: 0)
+  --append <path>   Merge these results into an existing report JSON
   --out <prefix>    Output prefix (default: training/data/eval-report)
   --timeout <ms>    Per-request timeout (default: 300000)
   --help            Show this message`);
@@ -56,6 +58,8 @@ function parseArgs(argv) {
     tuned: "explainhub-docs",
     host: process.env.OLLAMA_URL || "http://localhost:11434",
     limit: 0,
+    offset: 0,
+    append: null,
     out: path.join(TRAINING_DIR, "data/eval-report"),
     timeout: 300000,
   };
@@ -89,6 +93,15 @@ function parseArgs(argv) {
         if (!Number.isInteger(options.limit) || options.limit < 0) {
           throw new Error("--limit must be a non-negative integer");
         }
+        break;
+      case "--offset":
+        options.offset = Number(next());
+        if (!Number.isInteger(options.offset) || options.offset < 0) {
+          throw new Error("--offset must be a non-negative integer");
+        }
+        break;
+      case "--append":
+        options.append = path.resolve(next());
         break;
       case "--out":
         options.out = path.resolve(next());
@@ -321,13 +334,16 @@ async function main() {
     );
   }
 
-  const limit =
-    options.limit > 0 ? Math.min(options.limit, rows.length) : rows.length;
-  const evalRows = rows.slice(0, limit);
-  const evalRefs = refs.slice(0, limit);
+  const start = Math.min(options.offset, rows.length);
+  const stop =
+    options.limit > 0
+      ? Math.min(start + options.limit, rows.length)
+      : rows.length;
+  const evalRows = rows.slice(start, stop);
+  const evalRefs = refs.slice(start, stop);
 
   console.log(
-    `Evaluating ${limit} held-out documents with ${options.base} and ${options.tuned}`,
+    `Evaluating ${evalRows.length} held-out documents (offset ${start}) with ${options.base} and ${options.tuned}`,
   );
   console.log(`Ollama: ${options.host}\n`);
 
@@ -345,9 +361,26 @@ async function main() {
     options,
   );
 
+  let mergedBase = baseResults;
+  let mergedTuned = tunedResults;
+  if (options.append) {
+    const prior = JSON.parse(await fsp.readFile(options.append, "utf8"));
+    const order = new Map(refs.map((ref, index) => [ref.id, index]));
+    const mergeRows = (left, right) => {
+      const byId = new Map();
+      for (const row of left) byId.set(row.id, row);
+      for (const row of right) byId.set(row.id, row);
+      return [...byId.values()].sort(
+        (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0),
+      );
+    };
+    mergedBase = mergeRows(prior.results?.base ?? [], baseResults);
+    mergedTuned = mergeRows(prior.results?.tuned ?? [], tunedResults);
+  }
+
   const summary = {
-    base: summarize(baseResults),
-    tuned: summarize(tunedResults),
+    base: summarize(mergedBase),
+    tuned: summarize(mergedTuned),
   };
 
   const report = {
@@ -355,11 +388,11 @@ async function main() {
     host: options.host,
     base: options.base,
     tuned: options.tuned,
-    rows: limit,
+    rows: mergedBase.length,
     summary,
     results: {
-      base: baseResults,
-      tuned: tunedResults,
+      base: mergedBase,
+      tuned: mergedTuned,
     },
   };
 
@@ -375,7 +408,7 @@ async function main() {
     `- Date: ${report.generatedAt}`,
     `- Base model: \`${options.base}\``,
     `- Fine-tuned model: \`${options.tuned}\``,
-    `- Held-out documents: ${limit}`,
+    `- Held-out documents: ${report.rows}`,
     `- Composite delta: ${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(1)} percentage points`,
     "",
     markdownTable(summary),
