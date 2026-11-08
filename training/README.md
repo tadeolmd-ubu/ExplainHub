@@ -362,17 +362,56 @@ repository contains the current `soup.yaml`.
 
 ## Export and deploy to Ollama
 
-From a machine that has the trained adapter:
+There are two routes. On a 16 GB machine, applying the adapter at load time is
+the cheapest: it needs only the ~160 MB adapter, not a 5 GB merged GGUF.
+
+### Route A — apply the LoRA adapter (no merge)
+
+Ollama's safetensors adapter loader only looks for `model*.safetensors` and
+`*.json` at the adapter root, so build a clean directory from the PEFT files.
+(The PEFT name `adapter_model.safetensors` does not match, and the checkpoint
+subdirectories would collide on `adapter_config.json`.)
+
+```bash
+tar xzf explainhub-docs-lora.tar.gz
+mkdir -p adapter-ollama
+cp explainhub-docs-lora/adapter_model.safetensors adapter-ollama/model.safetensors
+cp explainhub-docs-lora/adapter_config.json adapter-ollama/adapter_config.json
+
+cat > Modelfile <<'EOF'
+FROM llama3:8b
+ADAPTER ./adapter-ollama
+EOF
+
+ollama create explainhub-docs -f Modelfile
+```
+
+The base must match the adapter's base (`unsloth/llama-3-8b-Instruct` is the
+same weights as `llama3:8b`). This route works on Ollama 0.34.0 and earlier;
+0.34.1 removed `ADAPTER`.
+
+### Route B — merge and export a GGUF
+
+This needs ~16 GB of RAM to load the 8B base in fp16, so it does not fit free
+Colab (~13 GB). Run it on a 24 GB machine, an L4/A100 VM, or Kaggle:
 
 ```bash
 cd training
 soup export \
-  --model ./output \
+  --model ./output/explainhub-docs-lora \
   --format gguf \
   --quant q4_k_m \
   --deploy ollama \
   --deploy-name explainhub-docs
 ```
+
+If you downloaded only the GGUF, create a `Modelfile` next to it:
+
+```text
+FROM ./explainhub-docs.q4_k_m.gguf
+```
+
+and register it with `ollama create explainhub-docs -f Modelfile`.
 
 Then point ExplainHub at the new model:
 
@@ -382,14 +421,6 @@ OLLAMA_MODEL=explainhub-docs
 
 Run a Markdown analysis. `AiEnhancer` will use `buildMdEnhancer`, which is the
 same prompt the model trained on.
-
-If you downloaded only the GGUF from Colab, create a `Modelfile` next to it:
-
-```text
-FROM ./explainhub-docs.q4_k_m.gguf
-```
-
-and register it with `ollama create explainhub-docs -f Modelfile`.
 
 ---
 
