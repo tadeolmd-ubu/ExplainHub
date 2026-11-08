@@ -1,0 +1,56 @@
+# Local pipeline smoke test — NOT the real fine-tune.
+#
+# The RTX 2050 has 4 GB of VRAM, so Llama 3 8B cannot be trained resident even
+# with 4-bit weights. This config uses a 1B model and the two sample rows only
+# to prove that the dataset, ChatML template, loss mask, and export path work
+# on this machine. The resulting adapter is not a usable documentation model.
+#
+#   cd training
+#   soup train --config soup.smoke.yaml
+#
+# For the real run, use soup.yaml on a 16 GB T4, 24 GB L4, or 40 GB A100.
+
+base: unsloth/Llama-3.2-1B-Instruct
+task: sft
+modality: text
+backend: transformers
+
+data:
+  train: ./data/example.jsonl
+  format: chatml
+  chat_template: llama3
+  train_on_responses_only: true
+  val_split: 0.0
+  # 512 is the practical ceiling on a 4 GB card once the logits tensor is
+  # counted. The sample prompt is longer, so this run truncates it: it proves
+  # that the rows, template, mask, optimizer, and export path work, not that
+  # the adapter learned the task. Use soup.yaml on a 16 GB+ GPU for real work.
+  max_length: 512
+
+training:
+  epochs: 1
+  lr: 2e-4
+  batch_size: 1
+  gradient_accumulation_steps: 1
+  gradient_checkpointing: true
+  auto_mixed_precision: true
+  optimizer: paged_adamw_8bit
+  lora:
+    r: 8
+    alpha: 16
+    dropout: 0.05
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - gate_proj
+      - up_proj
+      - down_proj
+  quantization: 4bit
+  seed: 42
+  save_steps: 10
+  logging_steps: 1
+
+output: ./output-smoke
+experiment_name: explainhub-docs-smoke

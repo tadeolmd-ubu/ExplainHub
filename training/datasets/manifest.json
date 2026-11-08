@@ -1,0 +1,23 @@
+{
+  "description": "Repositories used to build the ExplainHub documentation-enhancer dataset. split=train rows are trained on; split=eval rows are held out and must never appear in train.jsonl; split=ignore repos are skipped. The raw/ snapshots under datasets/pairs/<id>/ are the source of truth: refresh them explicitly, then correct them by hand.",
+  "repos": [
+    {
+      "id": "example-demo",
+      "path": null,
+      "split": "train",
+      "note": "Hand-written sample pair committed with the project. Used to regenerate data/example.jsonl."
+    },
+    {
+      "id": "explainhub",
+      "path": "../..",
+      "split": "train",
+      "note": "ExplainHub itself. Run --refresh-raw once, then copy raw/ to corrected/ and edit the prose."
+    },
+    {
+      "id": "loteria-mexicana",
+      "path": "../repos/loteria-mexicana",
+      "split": "eval",
+      "note": "Held-out React Native/Expo app. Never trained on; used by scripts/evaluate. Clone with: git clone --depth 1 https://github.com/tadeolmd-ubu/Loteria-mexicana.git training/repos/loteria-mexicana"
+    }
+  ]
+}

@@ -226,7 +226,7 @@ function removeTrailingProse(text) {
   if (lastKeep === -1) return text;
   return lines.slice(0, lastKeep + 1).join("\n");
 }
-export { postProcess };
+export { postProcess, stripCodeBlock };
 export class AiEnhancer {
   constructor() {
     this.ollama = new Ollama({

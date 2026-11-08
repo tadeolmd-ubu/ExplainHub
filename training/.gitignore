@@ -1,0 +1,33 @@
+# Generated datasets and reports (reproducible from datasets/pairs + scripts)
+data/*.jsonl
+!data/example.jsonl
+data/*.json
+!data/.gitkeep
+data/*.gguf
+data/*.md
+!data/.gitkeep
+
+# Candidate snapshots produced by --refresh-raw when raw/ already exists.
+# Review the diff, then re-run with --force to replace the tracked snapshot.
+datasets/pairs/*/raw.next/
+
+# Local repositories cloned for raw extraction
+repos/
+
+# Soup training artifacts
+output/
+output-smoke/
+runs/
+wandb/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+
+# Python / notebook noise
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+
+# Hugging Face cache if it is redirected here
+.cache/
