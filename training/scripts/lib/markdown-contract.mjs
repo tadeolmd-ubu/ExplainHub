@@ -168,9 +168,20 @@ export function documentDescription(markdown) {
     .trim();
 }
 
+/**
+ * The production prompt asks for a description with wording such as
+ * "Add a project description (2-3 sentences) directly after the ...". Models
+ * that do not follow the instruction sometimes copy that sentence into the
+ * output. It has the shape of a paragraph but is an instruction echo, not a
+ * description, so it must not satisfy the contract.
+ */
+const INSTRUCTION_ECHO =
+  /add a project description|\(2-3 sentences\)|directly after the ["'\u201c]?#?\s*title/i;
+
 export function hasDescription(markdown, minWords = 10) {
   const description = documentDescription(markdown);
   if (!description) return false;
+  if (INSTRUCTION_ECHO.test(description)) return false;
   const words = description.split(/\s+/).filter(Boolean);
   return words.length >= minWords;
 }
