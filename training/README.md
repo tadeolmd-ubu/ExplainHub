@@ -337,6 +337,32 @@ will then be truncated, so rebuild with `--max-chars 16000` to move it to
 `backend: unsloth`; Unsloth has its own fused cross-entropy, so remove
 `use_liger` in that case.
 
+### Second run (v2)
+
+`soup.v2.yaml` repeats the same 26-row run with more capacity and a longer
+schedule, so the two adapters can be compared on the same held-out set:
+
+| Setting | v1 (`soup.yaml`) | v2 (`soup.v2.yaml`) |
+|---------|------------------|---------------------|
+| LoRA `r` / `alpha` | 16 / 32 | 32 / 64 |
+| `lr` | 2e-4 | 1.5e-4 |
+| `epochs` | 3 | 5 |
+| `experiment_name` | `explainhub-docs-lora` | `explainhub-docs-lora-v2` |
+
+Train and deploy the second adapter as `explainhub-docs-v2`, then compare it
+against v1 on the same documents:
+
+```bash
+node scripts/evaluate.mjs \
+  --base explainhub-docs \
+  --tuned explainhub-docs-v2 \
+  --limit 10
+```
+
+Here the report's "Base" column is v1 and "Tuned" is v2, so the delta is the
+change introduced by the second run. To compare against the original base
+model, run `--base llama3:8b`.
+
 ### Local smoke test
 
 The RTX 2050 cannot hold Llama 3 8B even at 4 bits. `soup.smoke.yaml` uses a 1B

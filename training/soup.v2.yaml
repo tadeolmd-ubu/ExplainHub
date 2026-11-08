@@ -1,0 +1,91 @@
+# ExplainHub documentation enhancer — v2 (Llama 3 8B Instruct, QLoRA SFT).
+#
+# Second run, same 26-row dataset as soup.yaml. It changes capacity and the
+# training schedule so v2 can be compared with v1 on the same held-out set:
+#
+#   v1 (soup.yaml)   r=16 alpha=32  lr=2e-4    epochs=3
+#   v2 (this file)   r=32 alpha=64  lr=1.5e-4  epochs=5
+#
+# Deploy the result as `explainhub-docs-v2` so both adapters stay side by side
+# in Ollama, then compare them:
+#
+#   node scripts/evaluate.mjs --base explainhub-docs --tuned explainhub-docs-v2
+#
+# Run from this directory:
+#   cd training
+#   soup train --config soup.v2.yaml --allow-oom-attempt
+#
+# Paths are relative to the working directory, not to the config file.
+
+base: unsloth/llama-3-8b-Instruct
+# Official gated checkpoint, if you have accepted the license and run
+# `huggingface-cli login`:
+# base: meta-llama/Meta-Llama-3-8B-Instruct
+
+task: sft
+modality: text
+backend: transformers
+
+data:
+  train: ./data/train.jsonl
+  format: chatml
+  # The row container is ChatML; the model itself is Llama 3, so render with
+  # the Llama 3 template. This matches what Ollama applies in production.
+  chat_template: llama3
+  train_on_responses_only: true
+  # Repository-level split: eval.jsonl contains held-out repositories and is
+  # scored by scripts/evaluate.mjs. A random row split would leak documents
+  # from the same repository into validation.
+  val_split: 0.0
+  # 6144 tokens fits the longest training row (the ExplainHub README, 5871
+  # tokens) and still leaves the 8B QLoRA run inside a 16 GB T4 when Liger's
+  # fused loss is enabled below. Raise to 8192 on an A100 40 GB.
+  max_length: 6144
+
+training:
+  epochs: 5
+  lr: 1.5e-4
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  gradient_checkpointing: true
+  auto_mixed_precision: true
+  optimizer: paged_adamw_8bit
+  warmup_ratio: 0.03
+  weight_decay: 0.01
+  lora:
+    r: 32
+    alpha: 64
+    dropout: 0.05
+    target_modules:
+      - q_proj
+      - k_proj
+      - v_proj
+      - o_proj
+      - gate_proj
+      - up_proj
+      - down_proj
+  quantization: 4bit
+  # Liger Kernel fuses the LM head + cross-entropy into a chunked linear CE, so
+  # the full (sequence x vocabulary) logits tensor is never materialized. It
+  # also fuses RMSNorm, SwiGLU and RoPE. Without it Soup predicts ~25.1 GB at
+  # 6144 tokens (11 GB of that is the logits tensor); with the fused loss the
+  # run fits a 16 GB T4.
+  #
+  # Requires liger-kernel >= 0.8 and transformers >= 5:
+  #   /usr/bin/python3 -m pip install "liger-kernel==0.8.5"
+  use_liger: true
+  # Do NOT enable Cut Cross-Entropy here. The PyPI `cut-cross-entropy` wheel
+  # (all versions) does not ship the `cut_cross_entropy.transformers` patch that
+  # Soup imports, and the upstream patch still targets transformers 4.x (it
+  # imports `KwargsForCausalLM`, removed in transformers 5). Soup then prints
+  # "Cut Cross-Entropy: no matching architecture or cut_cross_entropy not
+  # installed" and falls back to the full logits tensor, which OOMs a T4.
+  use_cut_ce: false
+  seed: 42
+  # The dataset has 26 rows, so an epoch is ~4 optimizer steps with
+  # batch 1 and accumulation 8. Five epochs is ~20 steps; save every 5.
+  save_steps: 5
+  logging_steps: 1
+
+output: ./output
+experiment_name: explainhub-docs-lora-v2
