@@ -96,15 +96,24 @@ changes the prompts behind already-corrected targets.
 - **A CUDA GPU** for training. The local RTX 2050 (4 GB) is only enough for the
   1B smoke test. The real 8B run needs a 16 GB T4, 24 GB L4, or 40 GB A100
   (Colab, Kaggle, or a rented GPU).
-- **Cut Cross-Entropy** for the 16 GB path:
+- **Liger Kernel** for the 16 GB path:
 
   ```bash
-  pip install cut-cross-entropy
+  /usr/bin/python3 -m pip install "liger-kernel==0.8.5"
   ```
 
-  `soup.yaml` sets `training.use_cut_ce: true`. It avoids materializing the full
-  `(sequence × vocabulary)` logits tensor. Without it Soup predicts ~25 GB at
-  6144 tokens; with it, the fused loss keeps the 8B QLoRA run inside a T4.
+  `soup.yaml` sets `training.use_liger: true`. Liger fuses the LM head and the
+  cross-entropy into a chunked linear loss, so the full
+  `(sequence × vocabulary)` logits tensor is never materialized. Without it Soup
+  predicts ~25 GB at 6144 tokens; with it, the run fits a T4.
+
+  Do **not** use `cut-cross-entropy` here: every PyPI wheel omits the
+  `cut_cross_entropy.transformers` patch that Soup imports, and the upstream
+  patch still targets `transformers` 4.x (it imports `KwargsForCausalLM`, which
+  was removed in `transformers` 5). Soup then logs
+  `Cut Cross-Entropy: no matching architecture or cut_cross_entropy not
+  installed` and falls back to the logits tensor that OOMs the T4. Liger 0.8.5
+  requires `transformers>=5`, which is what Colab ships.
 - **Ollama** for deployment and evaluation.
 
 The base config uses the public `unsloth/llama-3-8b-Instruct` mirror. If you
@@ -280,8 +289,26 @@ soup train --config soup.yaml --allow-oom-attempt
 ```
 
 `--allow-oom-attempt` is needed because Soup's pre-flight gate prices the full
-logits tensor even when `use_cut_ce: true` removes it. With the fused loss, the
+logits tensor even when `use_liger: true` removes it. With the fused loss, the
 predicted peak at 6144 tokens is about 14 GB, inside a 16 GB T4.
+
+The training command also sets an allocator flag that reduces fragmentation:
+
+```bash
+PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
+  soup train --config soup.yaml --allow-oom-attempt
+```
+
+The log must contain this line before `Loading model`:
+
+```text
+Liger Kernel enabled: fused RMSNorm, SwiGLU, CrossEntropy, RoPE
+```
+
+If it says `Liger Kernel: no matching architecture found`, Liger is installed in
+a different interpreter than the one running `soup`. Reinstall it with
+`/usr/bin/python3 -m pip install "liger-kernel==0.8.5"` and verify with
+`/usr/bin/python3 -c "import liger_kernel"`.
 
 Key settings in `soup.yaml`:
 
@@ -292,8 +319,9 @@ Key settings in `soup.yaml`:
 | `backend` | `transformers` | Works on T4/L4/A100 without extra CUDA wheels |
 | `quantization` | `4bit` | QLoRA; the frozen base stays quantized |
 | `lora.r` / `alpha` | 16 / 32 | Small adapter, enough capacity for style and structure |
-| `data.max_length` | 6144 | Fits the README row (5881 tokens) on a 16 GB T4 with Cut Cross-Entropy |
-| `training.use_cut_ce` | `true` | Chunked loss avoids the 11 GB logits tensor at 6144 tokens |
+| `data.max_length` | 6144 | Fits the README row (5871 tokens) on a 16 GB T4 with Liger |
+| `training.use_liger` | `true` | Fused linear CE avoids the 11 GB logits tensor at 6144 tokens |
+| `training.use_cut_ce` | `false` | Broken on `transformers` 5 and not shipped by the PyPI wheel |
 | `batch_size` | 1 | A T4 cannot hold a larger micro-batch at 6144 tokens |
 | `gradient_accumulation_steps` | 8 | Effective batch of 8 |
 | `lr` | 2e-4 | Standard QLoRA learning rate |
@@ -307,7 +335,7 @@ will then be truncated, so rebuild with `--max-chars 16000` to move it to
 `max_length` to 8192 and re-run `soup data doctor` with the new limit. For
 2-5x faster training on CUDA, install `soup-cli[fast]` and set
 `backend: unsloth`; Unsloth has its own fused cross-entropy, so remove
-`use_cut_ce` in that case.
+`use_liger` in that case.
 
 ### Local smoke test
 
@@ -325,10 +353,10 @@ Treat the resulting adapter as a pipeline test, not as the deliverable.
 ### Colab
 
 Open `colab/soup-explainhub.ipynb`, upload `training/data/train.jsonl`, and run
-the cells. The notebook installs Soup plus `cut-cross-entropy`, validates the
-rows, trains with `--allow-oom-attempt`, exports a `q4_k_m` GGUF, and downloads
-it. Push the branch first so the cloned repository contains the current
-`soup.yaml`.
+the cells. The notebook installs Soup plus `liger-kernel==0.8.5` into the
+interpreter Soup runs, validates the rows, trains with `--allow-oom-attempt`,
+exports a `q4_k_m` GGUF, and downloads it. Push the branch first so the cloned
+repository contains the current `soup.yaml`.
 
 ---
 
@@ -443,13 +471,19 @@ it in production.
 
 **Soup refuses to start with "Predicted peak VRAM … exceeds"** — the 8B config
 is expected to trip the conservative gate. Pass `--allow-oom-attempt` and make
-sure `pip install cut-cross-entropy` succeeded; without Cut Cross-Entropy the
-run will not fit a 16 GB T4.
+sure `liger-kernel` is importable from Soup's interpreter; without the fused
+loss the run will not fit a 16 GB T4.
 
-**CUDA out of memory** — confirm `training.use_cut_ce: true` and that
-`cut-cross-entropy` is installed. If it still runs out, lower `data.max_length`
-to 4096 (then rebuild with `--max-chars 16000`) or to 2048, keep `batch_size: 1`,
-and keep `gradient_checkpointing: true`.
+**CUDA out of memory** — first confirm the log says
+`Liger Kernel enabled` and that `training.use_liger: true` is in `soup.yaml`.
+If it still runs out, lower `data.max_length` to 4096 (then rebuild with
+`--max-chars 16000`) or to 2048, keep `batch_size: 1`, and keep
+`gradient_checkpointing: true`.
+
+**`Liger Kernel: no matching architecture found`** — Soup runs under
+`/usr/bin/python3` while `pip` may install into `/usr/local/bin/python`. Install
+with `/usr/bin/python3 -m pip install "liger-kernel==0.8.5"` and verify with
+`/usr/bin/python3 -c "import liger_kernel, transformers; print(liger_kernel.__version__)"`.
 
 **The model repeats or never stops** — run `soup data doctor` and confirm the
 assistant turn ends with the EOS token. Also check that `chat_template: llama3`

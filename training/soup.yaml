@@ -31,9 +31,9 @@ data:
   # scored by scripts/evaluate.mjs. A random row split would leak documents
   # from the same repository into validation.
   val_split: 0.0
-  # 6144 tokens fits the longest training row (the ExplainHub README, 5881
-  # tokens) and still leaves the 8B QLoRA run inside a 16 GB T4 when Cut
-  # Cross-Entropy is enabled below. Raise to 8192 on an A100 40 GB.
+  # 6144 tokens fits the longest training row (the ExplainHub README, 5871
+  # tokens) and still leaves the 8B QLoRA run inside a 16 GB T4 when Liger's
+  # fused loss is enabled below. Raise to 8192 on an A100 40 GB.
   max_length: 6144
 
 training:
@@ -59,12 +59,22 @@ training:
       - up_proj
       - down_proj
   quantization: 4bit
-  # Cut Cross-Entropy avoids materializing the full (sequence x vocabulary)
-  # logits tensor. Without it Soup predicts ~25.1 GB at 6144 tokens (11 GB of
-  # that is the logits tensor); with the fused loss the run fits a 16 GB T4.
-  # Install `cut-cross-entropy` first:
-  #   pip install cut-cross-entropy
-  use_cut_ce: true
+  # Liger Kernel fuses the LM head + cross-entropy into a chunked linear CE, so
+  # the full (sequence x vocabulary) logits tensor is never materialized. It
+  # also fuses RMSNorm, SwiGLU and RoPE. Without it Soup predicts ~25.1 GB at
+  # 6144 tokens (11 GB of that is the logits tensor); with the fused loss the
+  # run fits a 16 GB T4.
+  #
+  # Requires liger-kernel >= 0.8 and transformers >= 5:
+  #   /usr/bin/python3 -m pip install "liger-kernel==0.8.5"
+  use_liger: true
+  # Do NOT enable Cut Cross-Entropy here. The PyPI `cut-cross-entropy` wheel
+  # (all versions) does not ship the `cut_cross_entropy.transformers` patch that
+  # Soup imports, and the upstream patch still targets transformers 4.x (it
+  # imports `KwargsForCausalLM`, removed in transformers 5). Soup then prints
+  # "Cut Cross-Entropy: no matching architecture or cut_cross_entropy not
+  # installed" and falls back to the full logits tensor, which OOMs a T4.
+  use_cut_ce: false
   seed: 42
   # The dataset has 26 rows, so an epoch is ~4 optimizer steps with
   # batch 1 and accumulation 8. Save every 5 steps to keep checkpoints.
