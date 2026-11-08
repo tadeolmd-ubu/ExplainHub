@@ -1,0 +1,467 @@
+{
+  "generatedAt": "2026-11-08T17:49:55.766Z",
+  "host": "http://localhost:11434",
+  "base": "llama3:8b",
+  "tuned": "explainhub-docs",
+  "rows": 10,
+  "summary": {
+    "base": {
+      "headingsMatch": 1,
+      "sectionRecall": 1,
+      "fileTableRowsMatch": 1,
+      "fileNameJaccard": 1,
+      "modulesTableRowsMatch": 1,
+      "exportsNotIncreased": 1,
+      "descriptionPresent": 0.5,
+      "contentFidelity": 0.3199360080657446,
+      "inventedFiles": 0,
+      "composite": 0.813987201613149,
+      "latencyMs": 67666.3,
+      "candidateChars": 1372.5,
+      "rows": 10,
+      "errors": 0
+    },
+    "tuned": {
+      "headingsMatch": 1,
+      "sectionRecall": 1,
+      "fileTableRowsMatch": 0.9,
+      "fileNameJaccard": 0.9333333333333332,
+      "modulesTableRowsMatch": 1,
+      "exportsNotIncreased": 1,
+      "descriptionPresent": 0.4,
+      "contentFidelity": 0.37577684079497653,
+      "inventedFiles": 0.2,
+      "composite": 0.7951553681589953,
+      "latencyMs": 68893.1,
+      "candidateChars": 1351.5,
+      "rows": 10,
+      "errors": 0
+    }
+  },
+  "results": {
+    "base": [
+      {
+        "id": "loteria-mexicana/README.md",
+        "repo": "loteria-mexicana",
+        "doc": "README.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.2647058823529412,
+          "inventedFiles": 0,
+          "composite": 0.7529411764705883,
+          "latencyMs": 157283,
+          "candidateChars": 4375
+        },
+        "response": "# loteria-mexicana\n\nREADME — Add a project description (2-3 sentences) directly after the \"# Title\" heading, before the first ## section. Infer from technologies, file structure, routes, and modules. Explain what the project does, its stack, and architecture.\n\n## Overview\n\n| Technology |\n|------|\n| TypeScript |\n| JavaScript |\n| `Node.js` |\n| Python |\n\n| Technology | File |\n|------|------|\n\n## Project Structure\n\n```\nloteria-mexicana/\n├── .gitignore\n├── AppLoteria\n│   ├── .gitignore\n│   ├── AGENTS.md\n│   ├── CLAUDE.md\n│   ├── README.md\n│   ├── app\n│   │   ├── _layout.tsx\n│   │   └── index.tsx\n│   ├── app.json\n│   ├── assets\n│   │   ├── cartas\n│   │   │   ├── 01-gallo.jpg\n│   │   │   ├── 02-diablito.jpg\n│   │   │   ├── 03-dama.jpg\n│   │   │   ├── 04-catrin.jpg\n│   │   │   ├── 05-paraguas.jpg\n│   │   │   ├── 06-sirena.jpg\n│   │   │   ├── 07-escalera.jpg\n│   │   │   ├── 08-botella.jpg\n│   │   │   ├── 09-barril.jpg\n│   │   │   ├── 10-arbol.jpg\n│   │   │   ├── 11-melon.jpg\n│   │   │   ├── 12-valiente.jpg\n│   │   │   ├── 13-gorrito.jpg\n│   │   │   ├── 14-muerte.jpg\n│   │   │   ├── 15-pera.jpg\n│   │   │   ├── 16-bandera.jpg\n│   │   │   ├── 17-bandolon.jpg\n│   │   │   ├── 18-violoncello.jpg\n│   │   │   ├── 19-garza.jpg\n│   │   │   ├── 20-pajaro.jpg\n│   │   │   ├── 21-mano.jpg\n│   │   │   ├── 22-bota.jpg\n│   │   │   ├── 23-luna.jpg\n│   │   │   ├── 24-cotorro.jpg\n│   │   │   ├── 25-borracho.jpg\n│   │   │   ├── 26-negrito.jpg\n│   │   │   ├── 27-corazon.jpg\n│   │   │   ├── 28-sandia.jpg\n│   │   │   ├── 29-tambor.jpg\n│   │   │   ├── 30-camaron.jpg\n│   │   │   ├── 31-jaras.jpg\n│   │   │   ├── 32-musico.jpg\n│   │   │   ├── 33-arana.jpg\n│   │   │   ├── 34-soldado.jpg\n│   │   │   ├── 35-estrella.jpg\n│   │   │   ├── 36-cazo.jpg\n│   │   │   ├── 37-mundo.jpg\n│   │   │   ├── 38-apache.jpg\n│   │   │   ├── 39-nopal.jpg\n│   │   │   ├── 40-alacran.jpg\n│   │   │   ├── 41-rosa.jpg\n│   │   │   ├── 42-calavera.jpg\n│   │   │   ├── 43-campana.jpg\n│   │   │   ├── 44-cantarito.jpg\n│   │   │   ├── 45-venado.jpg\n│   │   │   ├── 46-sol.jpg\n│   │   │   ├── 47-corona.jpg\n│   │   │   ├── 48-chalupa.jpg\n│   │   │   ├── 49-pino.jpg\n│   │   │   ├── 50-pescado.jpg\n│   │   │   ├── 51-palma.jpg\n│   │   │   ├── 52-maceta.jpg\n│   │   │   ├── 53-arpa.jpg\n│   │   │   └── 54-rana.jpg\n│   │   ├── images\n│   │   │   ├── android-icon-background.png\n│   │   │   ├── android-icon-foreground.png\n│   │   │   ├── android-icon-monochrome.png\n│   │   │   ├── favicon.png\n│   │   │   ├── icon.png\n│   │   │   ├── primer-carta.png\n│   │   │   └── splash-icon.png\n│   │   └── sonidos\n│   │       ├── barajar.wav\n│   │       ├── carta.wav\n│   │       ├── pausa.wav\n│   │       └── reanudar.wav\n│   ├── eslint.config.js\n│   ├── package-lock.json\n│   ├── package.json\n│   ├── scripts\n│   │   ├── generar_iconos.py\n│   │   ├── generar_sonidos.py\n│   │   └── importar_cartas.py\n│   ├── src\n│   │   ├── components\n│   │   │   ├── barra-progreso.tsx\n│   │   │   ├── control-velocidad.tsx\n│   │   │   ├── historial.tsx\n│   │   │   └── tarjeta-grande.tsx\n│   │   ├── data\n│   │   │   └── cartas.ts\n│   │   ├── hooks\n│   │   │   └── use-game.ts\n│   │   ├── storage\n│   │   │   └── storage.ts\n│   │   ├── theme.ts\n│   │   └── utils\n│   │       ├── sonidos.ts\n│   │       └── voz.ts\n│   └── tsconfig.json\n├── INSTALAR.md\n├── Loteria-Mexicana-v1.3.6.apk\n├── README.md\n├── mockup-loteria-v2.png\n└── primer-carta.png\n```\n\n## Modules\n\n| Module | Files | Description |\n|------|------|------|\n| [AppLoteria](docs/AppLoteria.md) | 1 | JavaScript - This module handles the main application logic. |\n| [app](docs/app.md) | 2 | JavaScript - This module contains the core application functionality. |\n| [scripts](docs/scripts.md) | 3 | Python - This module includes scripts for generating icons and sounds. |\n| [src](docs/src.md) | 1 | JavaScript - This module contains the source code for the application. |\n| [components](docs/components.md) | 4 | JavaScript - This module includes reusable UI components. |\n| [data](docs/data.md) | 1 | JavaScript - This module handles data storage and retrieval. |\n| [hooks](docs/hooks.md) | 1 | JavaScript - This module provides custom React hooks for the application. |\n| [storage](docs/storage.md) | 1 | JavaScript - This module manages local storage for the application. |\n| [utils](docs/utils.md) | 2 | JavaScript - This module includes utility functions for the application. |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/AppLoteria.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/AppLoteria.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.325,
+          "inventedFiles": 0,
+          "composite": 0.865,
+          "latencyMs": 36375,
+          "candidateChars": 412
+        },
+        "response": "# Module: AppLoteria\n\nREADME\nAppLoteria is a [brief description of what the project does, its stack, and architecture]. It utilizes [technologies] to provide [features or functionality].\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `eslint.config.js` | Configures ESLint settings for the application |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | cjs | `eslint.config.js` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/app.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/app.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.34523809523809523,
+          "inventedFiles": 0,
+          "composite": 0.8690476190476191,
+          "latencyMs": 44155,
+          "candidateChars": 915
+        },
+        "response": "# Module: app\n\nREADME\n================\n\nThis project is a [brief description of what the project does, its stack, and architecture]. It utilizes [list relevant technologies] to provide [high-level functionality].\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `_layout.tsx` | TypeScript module for layout management |\n| `index.tsx` | Entry point for the application |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| RootLayout | function |  | `_layout.tsx` | Initializes the app's layout |\n| PantallaJuego | function |  | `index.tsx` | Manages game screen logic |\n| confirmarReiniciar | arrow |  | `index.tsx` | Confirms restart of the game |\n| manejarSiguiente | arrow |  | `index.tsx` | Handles next step in the game |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | default | `_layout.tsx` |\n| default | default | `index.tsx` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/components.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/components.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.3333333333333333,
+          "inventedFiles": 0,
+          "composite": 0.7666666666666667,
+          "latencyMs": 68244,
+          "candidateChars": 1218
+        },
+        "response": "# Module: components\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `barra-progreso.tsx` | A progress bar component written in TypeScript |\n| `control-velocidad.tsx` | A velocity control component written in TypeScript |\n| `historial.tsx` | A historical data component written in TypeScript |\n| `tarjeta-grande.tsx` | A large card component written in TypeScript |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| BarraProgreso | function |  | `barra-progreso.tsx` | Initializes and renders a progress bar. |\n| ControlVelocidad | function |  | `control-velocidad.tsx` | Handles velocity control logic for the application. |\n| marcar | arrow |  | `control-velocidad.tsx` | Marks a specific point in time or location. |\n| Historial | function |  | `historial.tsx` | Retrieves and displays historical data. |\n| TarjetaGrande | function |  | `tarjeta-grande.tsx` | Renders a large card component with detailed information. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | default | `barra-progreso.tsx` |\n| default | default | `control-velocidad.tsx` |\n| default | default | `historial.tsx` |\n| default | default | `tarjeta-grande.tsx` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/data.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/data.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.2727272727272727,
+          "inventedFiles": 0,
+          "composite": 0.8545454545454546,
+          "latencyMs": 43310,
+          "candidateChars": 433
+        },
+        "response": "# Module: data\n\nREADME\n================\n\nThis project is a data processing module that utilizes TypeScript to manage and manipulate cartas. It provides a set of functions for creating, reading, updating, and deleting (CRUD) operations on carta data.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `cartas.ts` | TypeScript module |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| CARTAS | const | `cartas.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/hooks.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/hooks.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.28378378378378377,
+          "inventedFiles": 0,
+          "composite": 0.7567567567567568,
+          "latencyMs": 33427,
+          "candidateChars": 699
+        },
+        "response": "# Module: hooks\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `use-game.ts` | TypeScript module implementing game-related logic |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| barajarFisherYates | function |  | `use-game.ts` | Randomizes an array using the Fisher-Yates algorithm. |\n| reducer | function |  | `use-game.ts` | Reduces a game state using a custom reduction function. |\n| useGame | function |  | `use-game.ts` | Initializes and manages a game state, providing hooks for game logic. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| VELOCIDADES | const | `use-game.ts` |\n| useGame | function | `use-game.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/scripts.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/scripts.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.34355828220858897,
+          "inventedFiles": 0,
+          "composite": 0.8687116564417179,
+          "latencyMs": 141932,
+          "candidateChars": 3182
+        },
+        "response": "# Module: scripts\n\nREADME\nThe project generates icons and sounds for a card game. It uses Python modules to create and manipulate these assets.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `generar_iconos.py` | Python module for generating icons |\n| `generar_sonidos.py` | Python module for creating sound effects |\n| `importar_cartas.py` | Python module for importing card game data |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| tint_glyph | function |  | `generar_iconos.py` | Generates icon glyphs |\n| make_icon | function |  | `generar_iconos.py` | Creates icons from templates |\n| make_adaptive | function |  | `generar_iconos.py` | Adapts icon sizes for different platforms |\n| make_splash | function |  | `generar_iconos.py` | Generates splash screens |\n| escribir | function |  | `generar_sonidos.py` | Writes sound effects to file |\n| nota | function |  | `generar_sonidos.py` | Creates musical notes for sound effects |\n| ruido | function |  | `generar_sonidos.py` | Generates background noise |\n| chasquido | function |  | `generar_sonidos.py` | Creates sound effects for card game events |\n| carta | function |  | `generar_sonidos.py` | Processes card data for game logic |\n| dupla | function |  | `generar_sonidos.py` | Handles duplicate card detection |\n| barajar | function |  | `generar_sonidos.py` | Shuffles card deck |\n| main | function |  | `generar_sonidos.py` | Main entry point for sound effects module |\n| descargar_cached | function |  | `importar_cartas.py` | Downloads cached card game data |\n| procesar | function |  | `importar_cartas.py` | Processes imported card game data |\n| main | function |  | `importar_cartas.py` | Main entry point for importing card game data |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| R | module | `generar_iconos.py` |\n| GLYPH_FONT | module | `generar_iconos.py` |\n| FONT_BOLD | module | `generar_iconos.py` |\n| OUT | module | `generar_iconos.py` |\n| tint_glyph | module | `generar_iconos.py` |\n| make_icon | module | `generar_iconos.py` |\n| make_adaptive | module | `generar_iconos.py` |\n| make_splash | module | `generar_iconos.py` |\n| RATE | module | `generar_sonidos.py` |\n| BASE | module | `generar_sonidos.py` |\n| DESTINO | module | `generar_sonidos.py` |\n| escribir | module | `generar_sonidos.py` |\n| nota | module | `generar_sonidos.py` |\n| ruido | module | `generar_sonidos.py` |\n| chasquido | module | `generar_sonidos.py` |\n| carta | module | `generar_sonidos.py` |\n| dupla | module | `generar_sonidos.py` |\n| barajar | module | `generar_sonidos.py` |\n| main | module | `generar_sonidos.py` |\n| BASE | module | `importar_cartas.py` |\n| DESTINO | module | `importar_cartas.py` |\n| TMP | module | `importar_cartas.py` |\n| CREMA | module | `importar_cartas.py` |\n| CANVAS | module | `importar_cartas.py` |\n| CALIDAD_JPEG | module | `importar_cartas.py` |\n| GITHUB_ORIGEN | module | `importar_cartas.py` |\n| DRIVE | module | `importar_cartas.py` |\n| GITHUB | module | `importar_cartas.py` |\n| descargar_cached | module | `importar_cartas.py` |\n| procesar | module | `importar_cartas.py` |\n| main | module | `importar_cartas.py` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/src.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/src.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.2857142857142857,
+          "inventedFiles": 0,
+          "composite": 0.8571428571428572,
+          "latencyMs": 34661,
+          "candidateChars": 459
+        },
+        "response": "# Module: src\n\nREADME\n=====================================================\n\nThis project is a [brief description of what the project does, its stack, and architecture]. It utilizes [list relevant technologies] to provide [high-level functionality].\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `theme.ts` | TypeScript module for defining color schemes |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| colores | const | `theme.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/storage.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/storage.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.4230769230769231,
+          "inventedFiles": 0,
+          "composite": 0.7846153846153847,
+          "latencyMs": 45961,
+          "candidateChars": 737
+        },
+        "response": "# Module: storage\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `storage.ts` | TypeScript module implementing storage functionality |\n\n## Functions\n\n| Name | Kind | Async | Description | File |\n|------|------|------|------|------|\n| cargarPartida | function | yes | Loads a game state from storage. | `storage.ts` |\n| guardarPartida | function | yes | Saves the current game state to storage. | `storage.ts` |\n| limpiarPartida | function | yes | Clears any stored game data. | `storage.ts` |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| CLAVE_PARTIDA | const | `storage.ts` |\n| cargarPartida | function | `storage.ts` |\n| guardarPartida | function | `storage.ts` |\n| limpiarPartida | function | `storage.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/utils.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/utils.md",
+        "model": "llama3:8b",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.32222222222222224,
+          "inventedFiles": 0,
+          "composite": 0.7644444444444445,
+          "latencyMs": 71315,
+          "candidateChars": 1295
+        },
+        "response": "# Module: utils\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `sonidos.ts` | Provides functions for playing sound effects related to card games, such as carta, pausa, reanudar, and barajar. |\n| `voz.ts` | Handles voice-related functionality, including speaking and stopping the voice assistant. |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| sonidoCarta | function |  | `sonidos.ts` | Plays a sound effect for carta. |\n| sonidoPausa | function |  | `sonidos.ts` | Plays a sound effect for pausa. |\n| sonidoReanudar | function |  | `sonidos.ts` | Plays a sound effect for reanudar. |\n| sonidoBarajar | function |  | `sonidos.ts` | Plays a sound effect for barajar. |\n| hablar | function |  | `voz.ts` | Speaks a message using the voice assistant. |\n| terminar | arrow |  | `voz.ts` | Stops the voice assistant from speaking. |\n| detenerVoz | function |  | `voz.ts` | Stops the voice assistant from speaking and playing sounds. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| sonidoCarta | function | `sonidos.ts` |\n| sonidoPausa | function | `sonidos.ts` |\n| sonidoReanudar | function | `sonidos.ts` |\n| sonidoBarajar | function | `sonidos.ts` |\n| hablar | function | `voz.ts` |\n| detenerVoz | function | `voz.ts` |\n"
+      }
+    ],
+    "tuned": [
+      {
+        "id": "loteria-mexicana/README.md",
+        "repo": "loteria-mexicana",
+        "doc": "README.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.3584905660377358,
+          "inventedFiles": 0,
+          "composite": 0.7716981132075472,
+          "latencyMs": 275939,
+          "candidateChars": 3952
+        },
+        "response": "# loteria-mexicana\n\n## Overview\n\n| Technology |\n|------|\n| TypeScript |\n| JavaScript |\n| `Node.js` |\n\n| Technology | File |\n|------|------|\n\n## Project Structure\n\n```\nloteria-mexicana/\n├── .gitignore\n├── AppLoteria\n│   ├── .gitignore\n│   ├── AGENTS.md\n│   ├── CLAUDE.md\n│   ├── README.md\n│   ├── app\n│   │   ├── _layout.tsx\n│   │   └── index.tsx\n│   ├── app.json\n│   ├── assets\n│   │   ├── cartas\n│   │   │   ├── 01-gallo.jpg\n│   │   │   ├── 02-diablito.jpg\n│   │   │   ├── 03-dama.jpg\n│   │   │   ├── 04-catrin.jpg\n│   │   │   ├── 05-paraguas.jpg\n│   │   │   ├── 06-sirena.jpg\n│   │   │   ├── 07-escalera.jpg\n│   │   │   ├── 08-botella.jpg\n│   │   │   ├── 09-barril.jpg\n│   │   │   ├── 10-arbol.jpg\n│   │   │   ├── 11-melon.jpg\n│   │   │   ├── 12-valiente.jpg\n│   │   │   ├── 13-gorrito.jpg\n│   │   │   ├── 14-muerte.jpg\n│   │   │   ├── 15-pera.jpg\n│   │   │   ├── 16-bandera.jpg\n│   │   │   ├── 17-bandolon.jpg\n│   │   │   ├── 18-violoncello.jpg\n│   │   │   ├── 19-garza.jpg\n│   │   │   ├── 20-pajaro.jpg\n│   │   │   ├── 21-mano.jpg\n│   │   │   ├── 22-bota.jpg\n│   │   │   ├── 23-luna.jpg\n│   │   │   ├── 24-cotorro.jpg\n│   │   │   ├── 25-borracho.jpg\n│   │   │   ├── 26-negrito.jpg\n│   │   │   ├── 27-corazon.jpg\n│   │   │   ├── 28-sandia.jpg\n│   │   │   ├── 29-tambor.jpg\n│   │   │   ├── 30-camaron.jpg\n│   │   │   ├── 31-jaras.jpg\n│   │   │   ├── 32-musico.jpg\n│   │   │   ├── 33-arana.jpg\n│   │   │   ├── 34-soldado.jpg\n│   │   │   ├── 35-estrella.jpg\n│   │   │   ├── 36-cazo.jpg\n│   │   │   ├── 37-mundo.jpg\n│   │   │   ├── 38-apache.jpg\n│   │   │   ├── 39-nopal.jpg\n│   │   │   ├── 40-alacran.jpg\n│   │   │   ├── 41-rosa.jpg\n│   │   │   ├── 42-calavera.jpg\n│   │   │   ├── 43-campana.jpg\n│   │   │   ├── 44-cantarito.jpg\n│   │   │   ├── 45-venado.jpg\n│   │   │   ├── 46-sol.jpg\n│   │   │   ├── 47-corona.jpg\n│   │   │   ├── 48-chalupa.jpg\n│   │   │   ├── 49-pino.jpg\n│   │   │   ├── 50-pescado.jpg\n│   │   │   ├── 51-palma.jpg\n│   │   │   ├── 52-maceta.jpg\n│   │   │   ├── 53-arpa.jpg\n│   │   │   └── 54-rana.jpg\n│   │   ├── images\n│   │   │   ├── android-icon-background.png\n│   │   │   ├── android-icon-foreground.png\n│   │   │   ├── android-icon-monochrome.png\n│   │   │   ├── favicon.png\n│   │   │   ├── icon.png\n│   │   │   ├── primer-carta.png\n│   │   │   └── splash-icon.png\n│   │   └── sonidos\n│   │       ├── barajar.wav\n│   │       ├── carta.wav\n│   │       ├── pausa.wav\n│   │       └── reanudar.wav\n│   ├── eslint.config.js\n│   ├── package-lock.json\n│   ├── package.json\n│   ├── scripts\n│   │   ├── generar_iconos.py\n│   │   ├── generar_sonidos.py\n│   │   └── importar_cartas.py\n│   ├── src\n│   │   ├── components\n│   │   │   ├── barra-progreso.tsx\n│   │   │   ├── control-velocidad.tsx\n│   │   │   ├── historial.tsx\n│   │   │   └── tarjeta-grande.tsx\n│   │   ├── data\n│   │   │   └── cartas.ts\n│   │   ├── hooks\n│   │   │   └── use-game.ts\n│   │   ├── storage\n│   │   │   └── storage.ts\n│   │   ├── theme.ts\n│   │   └── utils\n│   │       ├── sonidos.ts\n│   │       └── voz.ts\n│   └── tsconfig.json\n├── INSTALAR.md\n├── Loteria-Mexicana-v1.3.6.apk\n├── README.md\n├── mockup-loteria-v2.png\n└── primer-carta.png\n```\n\n## Modules\n\n| Module | Files | Description |\n|------|------|------|\n| [AppLoteria](docs/AppLoteria.md) | 1 | JavaScript, lottery game with React and TypeScript. |\n| [app](docs/app.md) | 2 | JavaScript, React components for the lotería game. |\n| [scripts](docs/scripts.md) | 3 | Python, scripts to generate icons and sounds. |\n| [src](docs/src.md) | 1 | JavaScript, source files for the lotería game. |\n| [components](docs/components.md) | 4 | JavaScript, React components for the lotería game. |\n| [data](docs/data.md) | 1 | JavaScript, data files for the lotería game. |\n| [hooks](docs/hooks.md) | 1 | JavaScript, hooks for the lotería game. |\n| [storage](docs/storage.md) | 1 | JavaScript, storage utilities for the lotería game. |\n| [utils](docs/utils.md) | 2 | JavaScript, utility functions for the lotería game. |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/AppLoteria.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/AppLoteria.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 0,
+          "fileNameJaccard": 0.3333333333333333,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.3333333333333333,
+          "inventedFiles": 2,
+          "composite": 0.5666666666666668,
+          "latencyMs": 19536,
+          "candidateChars": 424
+        },
+        "response": "# Module: AppLoteria\n\nApplication that generates and validates lottery tickets.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `app.js` | Application entry point that sets up routes and starts the server. |\n| `config.js` | Configuration file for the application. |\n| `eslint.config.js` | Application configuration |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | cjs | `eslint.config.js` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/app.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/app.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.32558139534883723,
+          "inventedFiles": 0,
+          "composite": 0.8651162790697675,
+          "latencyMs": 35226,
+          "candidateChars": 922
+        },
+        "response": "# Module: app\n\nJuego de mesa en línea que permite a los jugadores crear y unirse a partidas.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `_layout.tsx` | TypeScript module that renders the game layout and its children |\n| `index.tsx` | Entry point of the app that renders the game board and handles user input |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| RootLayout | function |  | `_layout.tsx` | Renders the game layout with its children. |\n| PantallaJuego | function |  | `index.tsx` | Renders the game board and handles user input. |\n| confirmarReiniciar | arrow |  | `index.tsx` | Confirms whether to restart the game or not. |\n| manejarSiguiente | arrow |  | `index.tsx` | Handles the next step in the game flow. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | default | `_layout.tsx` |\n| default | default | `index.tsx` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/components.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/components.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.35789473684210527,
+          "inventedFiles": 0,
+          "composite": 0.8715789473684211,
+          "latencyMs": 66768,
+          "candidateChars": 1455
+        },
+        "response": "# Module: components\n\nProgress bar and velocity control for the main route, along with a history list and large card component.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `barra-progreso.tsx` | Progress bar that displays the current progress in the main route. |\n| `control-velocidad.tsx` | Velocity control that allows the user to adjust their speed in the main route. |\n| `historial.tsx` | History list that shows the user's previous routes and allows them to navigate back. |\n| `tarjeta-grande.tsx` | Large card component that displays a single route's details. |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| BarraProgreso | function |  | `barra-progreso.tsx` | Displays the current progress in the main route. |\n| ControlVelocidad | function |  | `control-velocidad.tsx` | Allows the user to adjust their speed in the main route. |\n| marcar | arrow |  | `control-velocidad.tsx` | Marks the current position as a stop. |\n| Historial | function |  | `historial.tsx` | Displays the user's previous routes and allows them to navigate back. |\n| TarjetaGrande | function |  | `tarjeta-grande.tsx` | Displays a single route's details in a large card. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| default | default | `barra-progreso.tsx` |\n| default | default | `control-velocidad.tsx` |\n| default | default | `historial.tsx` |\n| default | default | `tarjeta-grande.tsx` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/data.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/data.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.35135135135135137,
+          "inventedFiles": 0,
+          "composite": 0.7702702702702704,
+          "latencyMs": 12028,
+          "candidateChars": 346
+        },
+        "response": "# Module: data\n\nRepository of card representations and their metadata.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `cartas.ts` | TypeScript module that defines the Card and Carta types, along with utility functions for working with cards. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| CARTAS | const | `cartas.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/hooks.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/hooks.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.3013698630136986,
+          "inventedFiles": 0,
+          "composite": 0.7602739726027398,
+          "latencyMs": 29870,
+          "candidateChars": 793
+        },
+        "response": "# Module: hooks\n\nShuffle and game state management for the game.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `use-game.ts` | TypeScript module that implements Fisher-Yates shuffle, a reducer for game state, and a hook to manage the game state |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| barajarFisherYates | function |  | `use-game.ts` | Implements the Fisher-Yates shuffle algorithm. |\n| reducer | function |  | `use-game.ts` | Reduces game state based on actions. |\n| useGame | function |  | `use-game.ts` | Hook that manages the game state and provides a way to dispatch actions. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| VELOCIDADES | const | `use-game.ts` |\n| useGame | function | `use-game.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/scripts.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/scripts.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.40131578947368424,
+          "inventedFiles": 0,
+          "composite": 0.8802631578947369,
+          "latencyMs": 156309,
+          "candidateChars": 3234
+        },
+        "response": "# Module: scripts\n\nGenerates icons, sounds and imports cards from a GitHub repository.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `generar_iconos.py` | Generates SVG icons for the game. |\n| `generar_sonidos.py` | Generates sound files for the game. |\n| `importar_cartas.py` | Downloads and processes card images from a GitHub repository. |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| tint_glyph | function |  | `generar_iconos.py` | Tints an SVG glyph with the given color. |\n| make_icon | function |  | `generar_iconos.py` | Generates an SVG icon from a template and fills it with the given text. |\n| make_adaptive | function |  | `generar_iconos.py` | Generates an adaptive SVG icon from a template and fills it with the given text. |\n| make_splash | function |  | `generar_iconos.py` | Generates an SVG splash screen from a template and fills it with the given text. |\n| escribir | function |  | `generar_sonidos.py` | Writes a sound file to disk. |\n| nota | function |  | `generar_sonidos.py` | Plays a note sound. |\n| ruido | function |  | `generar_sonidos.py` | Plays a noise sound. |\n| chasquido | function |  | `generar_sonidos.py` | Plays a click sound. |\n| carta | function |  | `generar_sonidos.py` | Plays a card sound. |\n| dupla | function |  | `generar_sonidos.py` | Plays a double card sound. |\n| barajar | function |  | `generar_sonidos.py` | Shuffles the deck and plays it. |\n| main | function |  | `generar_sonidos.py` | Main entry point for the script. |\n| descargar_cached | function |  | `importar_cartas.py` | Downloads a cached file from GitHub. |\n| procesar | function |  | `importar_cartas.py` | Processes card images and saves them to disk. |\n| main | function |  | `importar_cartas.py` | Main entry point for the script. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| R | module | `generar_iconos.py` |\n| GLYPH_FONT | module | `generar_iconos.py` |\n| FONT_BOLD | module | `generar_iconos.py` |\n| OUT | module | `generar_iconos.py` |\n| tint_glyph | module | `generar_iconos.py` |\n| make_icon | module | `generar_iconos.py` |\n| make_adaptive | module | `generar_iconos.py` |\n| make_splash | module | `generar_iconos.py` |\n| RATE | module | `generar_sonidos.py` |\n| BASE | module | `generar_sonidos.py` |\n| DESTINO | module | `generar_sonidos.py` |\n| escribir | module | `generar_sonidos.py` |\n| nota | module | `generar_sonidos.py` |\n| ruido | module | `generar_sonidos.py` |\n| chasquido | module | `generar_sonidos.py` |\n| carta | module | `generar_sonidos.py` |\n| dupla | module | `generar_sonidos.py` |\n| barajar | module | `generar_sonidos.py` |\n| main | module | `generar_sonidos.py` |\n| BASE | module | `importar_cartas.py` |\n| DESTINO | module | `importar_cartas.py` |\n| TMP | module | `importar_cartas.py` |\n| CREMA | module | `importar_cartas.py` |\n| CANVAS | module | `importar_cartas.py` |\n| CALIDAD_JPEG | module | `importar_cartas.py` |\n| GITHUB_ORIGEN | module | `importar_cartas.py` |\n| DRIVE | module | `importar_cartas.py` |\n| GITHUB | module | `importar_cartas.py` |\n| descargar_cached | module | `importar_cartas.py` |\n| procesar | module | `importar_cartas.py` |\n| main | module | `importar_cartas.py` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/src.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/src.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 1,
+          "contentFidelity": 0.5,
+          "inventedFiles": 0,
+          "composite": 0.9,
+          "latencyMs": 11021,
+          "candidateChars": 318
+        },
+        "response": "# Module: src\n\nColor theme that defines the visual identity of the application.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `theme.ts` | Defines the color palette and typography used throughout the application. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| colores | const | `theme.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/storage.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/storage.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.4117647058823529,
+          "inventedFiles": 0,
+          "composite": 0.7823529411764707,
+          "latencyMs": 30483,
+          "candidateChars": 821
+        },
+        "response": "# Module: storage\n\nPartida storage and retrieval from local storage.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `storage.ts` | TypeScript module that loads, saves, and clears partida data. |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| cargarPartida | function | yes | `storage.ts` | Loads a partida from local storage. |\n| guardarPartida | function | yes | `storage.ts` | Saves the current partida to local storage. |\n| limpiarPartida | function | yes | `storage.ts` | Clears the current partida from local storage. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| CLAVE_PARTIDA | const | `storage.ts` |\n| cargarPartida | function | `storage.ts` |\n| guardarPartida | function | `storage.ts` |\n| limpiarPartida | function | `storage.ts` |\n"
+      },
+      {
+        "id": "loteria-mexicana/docs/utils.md",
+        "repo": "loteria-mexicana",
+        "doc": "docs/utils.md",
+        "model": "explainhub-docs",
+        "metrics": {
+          "headingsMatch": 1,
+          "sectionRecall": 1,
+          "fileTableRowsMatch": 1,
+          "fileNameJaccard": 1,
+          "modulesTableRowsMatch": 1,
+          "exportsNotIncreased": 1,
+          "descriptionPresent": 0,
+          "contentFidelity": 0.4166666666666667,
+          "inventedFiles": 0,
+          "composite": 0.7833333333333334,
+          "latencyMs": 51751,
+          "candidateChars": 1250
+        },
+        "response": "# Module: utils\n\nAudio utilities that provide sounds and voice functionality.\n\n## File Structure\n\n| File | Purpose |\n|------|------|\n| `sonidos.ts` | Audio sound effects for card, pause, resume, and shuffle. |\n| `voz.ts` | Voice control functions to speak, stop speaking, and terminate. |\n\n## Functions\n\n| Name | Kind | Async | File | Description |\n|------|------|------|------|------|\n| sonidoCarta | function |  | `sonidos.ts` | Plays the card sound effect. |\n| sonidoPausa | function |  | `sonidos.ts` | Plays the pause sound effect. |\n| sonidoReanudar | function |  | `sonidos.ts` | Plays the resume sound effect. |\n| sonidoBarajar | function |  | `sonidos.ts` | Plays the shuffle sound effect. |\n| hablar | function |  | `voz.ts` | Speaks a given text using the voice synthesizer. |\n| terminar | arrow |  | `voz.ts` | Terminates the current speaking task. |\n| detenerVoz | function |  | `voz.ts` | Stops the voice synthesizer from speaking. |\n\n## Exports\n\n| Name | Kind | File |\n|------|------|------|\n| sonidoCarta | function | `sonidos.ts` |\n| sonidoPausa | function | `sonidos.ts` |\n| sonidoReanudar | function | `sonidos.ts` |\n| sonidoBarajar | function | `sonidos.ts` |\n| hablar | function | `voz.ts` |\n| detenerVoz | function | `voz.ts` |\n"
+      }
+    ]
+  }
+}
